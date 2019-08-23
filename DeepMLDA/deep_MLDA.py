@@ -78,7 +78,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
                 word_dic.append( w )
                 vocab[w] = i
                 i = i + 1
-    print("vacab->",vocab)
+    print("vacab("+str(len(vocab))+")->"+str(vocab))
     print("word_dic("+ str(len(word_dic))+ ")->" + str(word_dic))
     print("BoWヒストグラムの作成を行います")
 
@@ -92,6 +92,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     # ヒストグラム化
     hist = hist * hist_k
     print("作成したヒストグラム->"+str(hist))
+    print("len(hist)->",len(hist[0]))
 
     np.savetxt( "./txtBoW_light/hist.txt", hist, fmt=str("%d") )
     codecs.open( "./txtBoW_light/word_dic.txt", "w", "utf8" ).write( "\n".join( word_dic ) )
@@ -101,8 +102,8 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     indexed_vocab = [reverse_vocab[index] for index in range(len(reverse_vocab))]
 #########################################################################################################################
     writer = SummaryWriter()  # create the TensorBoard object
-
     """
+
     トレーニング中に呼び出すコールバック関数，スコープからライターを使用
     """
     def training_callback(autoencoder, epoch, lr, loss, perplexity):
@@ -133,7 +134,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     ds_train = TensorDataset(torch.from_numpy(hist).float())
     ds_val = TensorDataset(torch.from_numpy(hist).float())
     autoencoder = ProdLDA(
-        in_dimension=len(vocab),#1995
+        in_dimension=len(hist[0]),# len(vocab),1995
         hidden1_dimension=100,
         hidden2_dimension=100,
         topics=define_topic

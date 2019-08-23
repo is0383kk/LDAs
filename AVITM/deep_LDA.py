@@ -9,8 +9,6 @@ import pickle
 from ptavitm.model import train
 from ptavitm.vae import ProdLDA
 import codecs
-from ptavitm.model import train
-from ptavitm.vae import ProdLDA
 
 """
 コマンドライン引数

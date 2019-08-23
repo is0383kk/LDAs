@@ -1,15 +1,12 @@
 from collections import OrderedDict
-
 import torch
 import torch.nn as nn
-
 from typing import Mapping, Optional, Tuple
 
 
 def prior(topics: int) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Prior for the model.
-
     :param topics: number of topics
     :return: mean and variance tensors
     """
@@ -95,13 +92,13 @@ class ProdLDA(nn.Module):
         self.decoder = decoder(
             in_dimension, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
-        # set the priors, do not learn them
+        # 事前分布を定義,これらは学習しない.
         self.prior_mean, self.prior_var = map(nn.Parameter, prior(topics))
         self.prior_logvar = nn.Parameter(self.prior_var.log())
         self.prior_mean.requires_grad = False
         self.prior_var.requires_grad = False
         self.prior_logvar.requires_grad = False
-        # do not learn the batchnorm weight, setting it to 1 as in https://git.io/fhtsY
+        # バッチノルム用の重み,これらは学習しない.1.0で初期化.https://git.io/fhtsY
         for component in [self.mean, self.logvar, self.decoder]:
             component.batchnorm.weight.requires_grad = False
             component.batchnorm.weight.fill_(1.0)
@@ -118,6 +115,7 @@ class ProdLDA(nn.Module):
 
     def encode(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
+        テキスト用のエンコーダ
         平均と分散を算出
         """
         encoded = self.encoder(batch)
@@ -130,11 +128,13 @@ class ProdLDA(nn.Module):
     def decode(self, mean: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
         # Same as _generator_network method in the original TensorFlow implementation at https://git.io/fhUJu
         """
+        テキスト用のデコーダ
         リパラメトリゼーショントリック
         """
         eps = mean.new().resize_as_(mean).normal_(mean=0, std=1)
         z = mean + logvar.exp().sqrt() * eps
-        #print("z.shape->"+str(z.shape))
+        print("z.shape->"+str(z.shape))
+        print("z->"+str(z))
         return self.decoder(z)
 
     def forward(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
