@@ -43,7 +43,7 @@ def make_bof( code_book_name, images, hist_name ):
     for img in images:
         f = calc_feature( img )
         idx = knn.findNearest( f, 1 )[1]
-        h = np.zeros( len(code_book) ,dtype=np.int64)
+        h = np.zeros( len(code_book) )
         for i in idx:
             h[int(i)] += 1
         hist.append( h.tolist() )
@@ -97,13 +97,17 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     make_codebook( files, 50, codebook_file )
     hist = make_bof( codebook_file , files, hist_file )
     # ヒストグラム化
-    hist = hist * hist_k
+    hist = np.array(hist,dtype=float)
+    #hist = hist * hist_k
     print("作成したヒストグラム->"+str(hist))
     print("len(hist)->",len(hist[0]))
-    vocab = []
+    vocab = {}
+    for i in range(len(hist[0])):
+        vocab[str(i) + image_feature] = i
+    print("vocab->",vocab)
     """
     vocab
-    {'0番目の特徴': 0,'1番目の特徴':1 } 
+    {'0番目の特徴': 0,'1番目の特徴':1 }
     """
 
     #################################################################################

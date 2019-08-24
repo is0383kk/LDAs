@@ -89,13 +89,14 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         for w in words:
             idx = word_dic.index(w)
             hist[d,idx] += 1
+    print("hist->",hist)
     # ヒストグラム化
     hist = hist * hist_k
+
     print("作成したヒストグラム->"+str(hist))
     print("len(hist)->",len(hist[0]))
 
-    np.savetxt( "./txtBoW_light/hist.txt", hist, fmt=str("%d") )
-    codecs.open( "./txtBoW_light/word_dic.txt", "w", "utf8" ).write( "\n".join( word_dic ) )
+
     #################################################################################
     print('Loading input data')
     reverse_vocab = {vocab[word]: word for word in vocab};
