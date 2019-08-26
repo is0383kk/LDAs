@@ -1,8 +1,3 @@
-import os
-import sys
-sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')#ROSが干渉してくる
-import cv2
-import glob
 import click
 import numpy as np
 from torch.optim import Adam
@@ -10,44 +5,13 @@ import torch
 from torch.utils.data import TensorDataset
 from tensorboardX import SummaryWriter
 import pickle
-
+# BoWヒストグラム作成用のmodule
+from module.bow import make_bow
+# DeepLDA用の訓練用関数とvaeモデル
 from ptavitm.model import train
 from ptavitm.vae import ProdLDA
-import codecs
-from ptavitm.model import train
-from ptavitm.vae import ProdLDA
 
-_detecotor = cv2.AKAZE_create()
 
-def calc_feature( filename ):
-    img = cv2.imread( filename, 0 )
-    kp, discriptor = _detecotor.detectAndCompute(img,None)
-    return np.array(discriptor, dtype=np.float32 )
-
-# コードブックを作成
-def make_codebook( images, code_book_size, save_name ):
-    bow_trainer = cv2.BOWKMeansTrainer( code_book_size )
-    for img in images:
-        f = calc_feature(img)  # 特徴量計算
-        bow_trainer.add( f )
-    code_book = bow_trainer.cluster()
-    np.savetxt( save_name, code_book )
-
-# ヒストグラム作成
-def make_bof( code_book_name, images, hist_name ):
-    code_book = np.loadtxt( code_book_name, dtype=np.float32 )
-
-    knn= cv2.ml.KNearest_create()
-    knn.train(code_book, cv2.ml.ROW_SAMPLE, np.arange(len(code_book),dtype=np.float32))
-    hist = []
-    for img in images:
-        f = calc_feature( img )
-        idx = knn.findNearest( f, 1 )[1]
-        h = np.zeros( len(code_book) )
-        for i in idx:
-            h[int(i)] += 1
-        hist.append( h.tolist() )
-    return hist
 
 """
 コマンドライン引数
@@ -85,32 +49,21 @@ def make_bof( code_book_name, images, hist_name ):
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
     define_topic = 3
-    image_feature = "番目の特徴"
-    image_file = "./visionBoF_light/images/*.png"
-    codebook_file = "./visionBoF_light/codebook.txt"
-    hist_file = "./visionBoF_light/histgram_v.txt"
+    sentence_file = "./txtBoW_light/text.txt"
+    hist_file = "./txtBoW_light/hist.txt"
+    word_dic = "./txtBoW_light/word_dic.txt"
     hist_k = 10 # ヒストグラムの水増し係数
     """
     データセットの読み込み
+    BoWヒストグラムの作成
     """
-    files = glob.glob(image_file)
-    make_codebook( files, 50, codebook_file )
-    hist = make_bof( codebook_file , files, hist_file )
+    vocab, hist = make_bow(sentence_file)
+    print("hist->",hist)
     # ヒストグラム化
-    hist = np.array(hist,dtype=float)
-    #hist = hist * hist_k
+    hist = hist * hist_k
     print("作成したヒストグラム->"+str(hist))
     print("len(hist)->",len(hist[0]))
-    vocab = {}
-    for i in range(len(hist[0])):
-        vocab[str(i) + image_feature] = i
-    print("vocab->",vocab)
-    """
-    vocab
-    {'0番目の特徴': 0,'1番目の特徴':1 }
-    """
-
-    #################################################################################
+    #######################ここまでがBoWを作成する作業##############################################
     print('Loading input data')
     reverse_vocab = {vocab[word]: word for word in vocab};
     indexed_vocab = [reverse_vocab[index] for index in range(len(reverse_vocab))]

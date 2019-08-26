@@ -1,3 +1,4 @@
+import glob
 import click
 import numpy as np
 from torch.optim import Adam
@@ -5,12 +6,14 @@ import torch
 from torch.utils.data import TensorDataset
 from tensorboardX import SummaryWriter
 import pickle
+# BoFヒストグラム作成用のmodule
+from module.bow import make_bof
+from module.bow import make_codebook
+# DeepLDA用の訓練用関数とvaeモデル
+from ptavitm.model import train
+from ptavitm.vae import ProdLDA
 
-from ptavitm.model import train
-from ptavitm.vae import ProdLDA
-import codecs
-from ptavitm.model import train
-from ptavitm.vae import ProdLDA
+
 
 """
 コマンドライン引数
@@ -47,64 +50,41 @@ from ptavitm.vae import ProdLDA
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 3
-    sentence_file = "./txtBoW_light/text.txt"
-    hist_file = "./txtBoW_light/hist.txt"
-    word_dic = "./txtBoW_light/word_dic.txt"
+    define_topic = 3 # トピックの数を事前に定義
+    image_feature = "番目の特徴" # BoF用
+    image_file = "./visionBoF_light/images/*.png"
+    codebook_file = "./visionBoF_light/codebook.txt"
+    hist_file = "./visionBoF_light/histgram_v.txt"
     hist_k = 10 # ヒストグラムの水増し係数
     """
     データセットの読み込み
+    BoFヒストグラムの作成
     """
-    word_dic = []
-    vocab = {}
-    # 各行を単語に分割
-    lines = []
-    for line in codecs.open("./txtBoW_light/text.txt", "r", "utf8" ).readlines():
-        # 改行コードを削除
-        line = line.rstrip("\r\n")
-
-        # 単語分割
-        words = line.split(" ")
-
-        lines.append( words )
-    print("lines(" + str(len(lines)) + ")->" + str(lines))
-
-    # 単語辞書とヒストグラムを作成
-    i = 0
-    for words in lines:
-        for w in words:
-            # 単語がなければ辞書に追加
-            if not w in word_dic:
-                word_dic.append( w )
-                vocab[w] = i
-                i = i + 1
-    print("vacab("+str(len(vocab))+")->"+str(vocab))
-    print("word_dic("+ str(len(word_dic))+ ")->" + str(word_dic))
-    print("BoWヒストグラムの作成を行います")
-
-    hist = np.zeros( (len(lines), len(word_dic)) )
-
-    print("\n")
-    for d,words in enumerate(lines):
-        for w in words:
-            idx = word_dic.index(w)
-            hist[d,idx] += 1
-    print("hist->",hist)
+    files = glob.glob(image_file)
+    make_codebook( files, 50, codebook_file )
+    hist = make_bof( codebook_file , files, hist_file )
     # ヒストグラム化
-    hist = hist * hist_k
-
+    hist = np.array(hist,dtype=float)
+    #hist = hist * hist_k
     print("作成したヒストグラム->"+str(hist))
     print("len(hist)->",len(hist[0]))
-
-
-    #################################################################################
+    vocab = {}
+    for i in range(len(hist[0])):
+        vocab[str(i) + image_feature] = i
+    print("vocab->",vocab)
+    """
+    vocab
+    {'0番目の特徴': 0,'1番目の特徴':1 }
+    BoFの局所特徴量を単語で表現
+    BoWと同じように訓練できるようにしただけ
+    """
+# ここまでがBoFを作成する作業#############################################
     print('Loading input data')
     reverse_vocab = {vocab[word]: word for word in vocab};
     indexed_vocab = [reverse_vocab[index] for index in range(len(reverse_vocab))]
-#########################################################################################################################
+# ここから本番######################################################################
     writer = SummaryWriter()  # create the TensorBoard object
     """
-
     トレーニング中に呼び出すコールバック関数，スコープからライターを使用
     """
     def training_callback(autoencoder, epoch, lr, loss, perplexity):
@@ -135,7 +115,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     ds_train = TensorDataset(torch.from_numpy(hist).float())
     ds_val = TensorDataset(torch.from_numpy(hist).float())
     autoencoder = ProdLDA(
-        in_dimension=len(hist[0]),# len(vocab),1995
+        in_dimension=len(hist[0]),# 本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
         hidden1_dimension=100,
         hidden2_dimension=100,
         topics=define_topic
