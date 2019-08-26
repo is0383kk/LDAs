@@ -42,13 +42,10 @@ PyTorch implementation of the **Autoencoding Variational Inference For Topic Mod
 
 - [Implementation source of AVITM](https://github.com/vlukiyanov/pt-avitm)
 
-## Requirement
-- Pytorch >= 1.0
-- numpy
-- cv2 >= 4.1.0 (Probably works even a little older)
+- Requirement
 
-#### Other implementations of AVITM
 
-- [Original TensorFlow](https://github.com/akashgit/autoencoding_vi_for_topic_models)
+- Other implementations of AVITM
+    - [Original TensorFlow](https://github.com/akashgit/autoencoding_vi_for_topic_models)
 
-- [Pytorch(Old version)](https://github.com/hyqneuron/pytorch-avitm)
+    - [Pytorch(Old version)](https://github.com/hyqneuron/pytorch-avitm)
