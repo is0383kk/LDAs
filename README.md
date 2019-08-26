@@ -2,7 +2,7 @@
 Ongoing
 ## Latent Dirichlet Allocation
 - `LDA/lda_gbs.py`:LDA by using Collapsed Gibbs sampler with Python
-- `LDA/txtBoW_light/text.txt`: You can write a sentence. **Sentences must be separated by spaces for each word.**
+- `LDA/txtBoW_light/text.txt`: You can write  sentences. **Sentences must be separated by spaces for each word.**
     - For example
     ```
     内藤 は 彼女 が できない
@@ -13,7 +13,7 @@ Ongoing
     室 は 顔芸 を して いる
     ```
 - Usage
-    1. Write a sentence in `LDA/txtBoW_light/text.txt`
+    1. Write sentences in `LDA/txtBoW_light/text.txt`
     2. `python3 /LDA/txtBoW_light/bow.py`
     3. `python3 /LDA/lda_gbs.py`
 
@@ -40,7 +40,7 @@ import matplotlib.pyplot as plt
 PyTorch implementation of the **Autoencoding Variational Inference For Topic Models (AVITM)** algorithm.
 [Original paper](https://arxiv.org/abs/1703.01488)
 
-- [Implementation source of AVITM](https://github.com/vlukiyanov/pt-avitm)
+- [Implementation source of AVITM by using PyTorch](https://github.com/vlukiyanov/pt-avitm)
 
 - Requirement
 
@@ -48,4 +48,4 @@ PyTorch implementation of the **Autoencoding Variational Inference For Topic Mod
 - Other implementations of AVITM
     - [Original TensorFlow](https://github.com/akashgit/autoencoding_vi_for_topic_models)
 
-    - [Pytorch(Old version)](https://github.com/hyqneuron/pytorch-avitm)
+    - [PyTorch(Old version)](https://github.com/hyqneuron/pytorch-avitm)
