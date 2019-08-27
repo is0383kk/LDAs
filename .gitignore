@@ -1,3 +1,13 @@
+LDA/result.png
+LDA/Pdz.txt
+LDA/Pzv.txt
+LDA/bow/hist.txt
+LDA/bow/word_dic.txt
+MLDA/learn_result
+MLDA/bof/codebook.txt
+MLDA/bof/histogram_v.txt
+MLDA/bow/histogram_w.txt
+MLDA/bow/word_dic.txt
 DeepLDA/topic.txt
 DeepLDA/runs
 DeepMLDA/topic.txt
