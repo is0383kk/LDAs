@@ -1,2 +1,4 @@
-./*/topic.txt
-./*/runs
+DeepLDA/topic.txt
+DeepLDA/runs
+DeepMLDA/topic.txt
+DeepMLDA/runs
