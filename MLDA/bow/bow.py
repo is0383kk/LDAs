@@ -1,5 +1,5 @@
 import codecs
-import numpy
+import numpy as np
 
 def make_bow( src_name, hist_name, dict_name ):
     word_dic = []
@@ -42,7 +42,7 @@ def make_bow( src_name, hist_name, dict_name ):
     print("word_dic("+ str(len(word_dic))+ ")->" + str(word_dic))
 
     # ヒストグラム化
-    hist = numpy.zeros( (len(lines), len(word_dic)) )
+    hist = np.zeros( (len(lines), len(word_dic)) )
     print("\n")
     for d,words in enumerate(lines):
         for w in words:
@@ -50,7 +50,7 @@ def make_bow( src_name, hist_name, dict_name ):
             hist[d,idx] += 1
 
 
-    numpy.savetxt( hist_name, hist, fmt=str("%d") )
+    np.savetxt( hist_name, hist, fmt=str("%d") )
     codecs.open( dict_name, "w", "utf8" ).write( "\n".join( word_dic ) )
 
     """
