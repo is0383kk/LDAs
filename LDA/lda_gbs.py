@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 #ハイパーパラメータ
 __alpha = 1.0
 __beta = 1.0
-epoch_num = 100
+epoch_num = 100 # 学習エポック
 
-root = "./txtBoW_light/hist.txt"
+root = "./bow/hist.txt"
 
 def calc_lda_param( docs_dn, topics_dn, K, V ):
     D = len(docs_dn)
@@ -27,19 +27,19 @@ def calc_lda_param( docs_dn, topics_dn, K, V ):
             n_dz[d][z] += 1
             n_zv[z][v] += 1
             n_z[z] += 1
-    
+
     print("n_dz->"+str(n_dz))
     """
     n_dz = [[3. 2. 1.]]　
     文書1においてトピック1：3,トピック2:2,トピック3:3
     """
-    
+
     print("n_zv->"+str(n_zv))
     """
     n_zv = [[1. 1. 0. 0. 2. 1. 0. 0. 1. 0. 1. 1. 1. 1.]]
     トピック１においてi番目の単語が出現した回数
     """
-    
+
     print("n_z->"+str(n_z))
     """
     z = [10 6 7]
@@ -70,7 +70,7 @@ def sample_topic( d, v, n_dz, n_zv, n_z, K, V ):
 def conv_to_word_list( data ):
     """
     語彙の総数=14
-    bow = 
+    bow =
     [0. 0. 1. 1. 0. 0. 0. 0. 0. 0. 0. 1. 1. 1.] x 10
     """
     V = len(data)
@@ -116,35 +116,35 @@ def lda( data , K ):
     liks = []
 
     # 単語の種類数
-    V = len(data[0])    # 語彙数(語彙の総数)    
+    V = len(data[0])    # 語彙数(語彙の総数)
     D = len(data)       # 文書数
     print("語彙数: " + str(V) + ",文書数: " + str(D))
-    
+
     # data内の単語を一列に並べる　（計算しやすくするため）
     docs_dn = [ None for i in range(D) ]
     topics_dn = [ None for i in range(D) ]
-    	
+
     for d in range(D):
         docs_dn[d] = conv_to_word_list( data[d] )
         topics_dn[d] = np.random.randint( 0, K, len(docs_dn[d]) ) # 各単語にランダムでトピックを割り当てる
-    
+
     """
     d = np.array(docs_dn[3])
     print("ddn",d.shape) 50
     t = np.array(topics_dn[3])
     print("tdn",t.shape) 50
-    
+
     BoW =
-    [[1. 1. 1. 1. 1. 1. 0. 0. 0. 0. 0. 0. 0. 0.] 
+    [[1. 1. 1. 1. 1. 1. 0. 0. 0. 0. 0. 0. 0. 0.]
     [1. 1. 1. 0. 1. 1. 1. 0. 0. 0. 0. 0. 0. 0.]
     [0. 0. 1. 1. 0. 0. 0. 1. 1. 1. 1. 0. 0. 0.]
     [0. 0. 1. 1. 0. 0. 0. 0. 0. 0. 0. 1. 1. 1.]] x 10倍してる
-    ############################################### 
+    ###############################################
     出現した語彙（のインデックス）を一列にしたものddn[3]: [2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 11 11 11 11 11 11 11 11 11 11 12 12 12 12 12 12 12 12 12 12 13 13 13 13 13 13 13 13 13 13]出現した語彙のインデックス x 10個（最初の読み込みの部分）
     ###############################################
     tdn[3]: [1 1 1 2 1 1 1 0 1 0 2 0 2 1 1 2 1 1 2 1 1 0 2 0 2 1 0 0 1 1 0 2 0 0 0 1 2 1 1 1 0 0 2 0 1 2 2 1 1 1]ddnに対応するトピックをランダム割当て
     """
-    
+
 
 
     # LDAのパラメータを計算
@@ -174,9 +174,9 @@ def lda( data , K ):
                 topics_dn[d][n] = z
                 n_dz[d][z] += 1
                 n_zv[z][v] += 1
-                n_z[z] += 1	
-                
-		
+                n_z[z] += 1
+
+
         lik = calc_liklihood( data, n_dz, n_zv, n_z, K, V )
         liks.append( lik )
         print ("対数尤度" + str(lik))
@@ -184,7 +184,7 @@ def lda( data , K ):
         print ("分類結果" + str(doc_dopics))
         print("---------------------")
 
-	
+
         # グラフ表示
         plt.clf()
         plt.subplot("121")
@@ -201,13 +201,13 @@ def lda( data , K ):
     plt.show()
     print(docs_dn[3])
     print(topics_dn[3])
-   
+
 def main():
     n = 100 # データの水増し用の変数
     topic = 3 # トピック数を指定
     data = np.loadtxt( root , dtype=np.int32)*n # 発生回数にnをかけて水増し可能
     #print(data)
-    lda( data , topic ) 
+    lda( data , topic )
 
 if __name__ == '__main__':
     main()
