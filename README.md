@@ -27,10 +27,10 @@ def main():
     室 は ずっと 踊って いる
     室 は 顔芸 を して いる
     ```
-- Usage
-    1. Write sentences in `/LDA/bow/text.txt`  
-    2. Create BoW:`python3 /LDA/bow/bow.py`  
-    3. `python3 /LDA/lda.py`
+Usage:**  
+1. Write sentences in `/LDA/bow/text.txt`  
+2. Create BoW:`python3 /LDA/bow/bow.py`  
+3. `python3 /LDA/lda.py`  
 
 - Requirement
 
@@ -79,11 +79,11 @@ def main():
 
 - `/MLDA/bof/bof.py`: It can generate **BoF file** which is used by `/MLDA/mlda.py` from `/MLDA/bof/images/*.png`
 
-**Usage:**
-    1. Write sentences in `/MLDA/bow/text.txt`  
-    2. Create BoW:`python3 /MLDA/bow/bow.py`  
-    3. Create BoF:`python3 /MLDA/bof/bof.py`  
-    4. `python3 /MLDA/mlda.py`
+**Usage:**  
+1. Write sentences in `/MLDA/bow/text.txt`  
+2. Create BoW:`python3 /MLDA/bow/bow.py`  
+3. Create BoF:`python3 /MLDA/bof/bof.py`  
+4. `python3 /MLDA/mlda.py`  
 
 **Requirement:**
 
