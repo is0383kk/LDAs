@@ -27,15 +27,13 @@ def main():
     室 は ずっと 踊って いる
     室 は 顔芸 を して いる
     ```
-Usage:**  
+**Usage:**  
 1. Write sentences in `/LDA/bow/text.txt`  
 2. Create BoW:`python3 /LDA/bow/bow.py`  
 3. `python3 /LDA/lda.py`  
 
-- Requirement
-
-Python3.X and the following modules are required
-
+**Requirement**  
+Python3.X and the following modules are required  
 ```python
 import codecs
 import numpy as np
@@ -85,7 +83,7 @@ def main():
 3. Create BoF:`python3 /MLDA/bof/bof.py`  
 4. `python3 /MLDA/mlda.py`  
 
-**Requirement:**
+**Requirement:**  
 
 Python3.X and the following modules are required
 
@@ -166,7 +164,7 @@ from typing import Mapping, Optional, Tuple
 from torch.utils.data import Dataset
 ```
 
-**Usage:**
+**Usage:**  
 Ongoing
 
 **References:**
