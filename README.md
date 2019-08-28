@@ -5,10 +5,20 @@ Ongoing
 
 What the `LDA` contains:  
 
-- `/LDA/lda_gbs.py`:LDA by using Collapsed Gibbs sampler with Python
-- `/LDA/bow/bow.py`: It can generate **BoW file** which is used by `/LDA/lda_gbs.py` from `/LDA/bow/text.txt`
-- `/LDA/bow/text.txt`: You can write  sentences. **Sentences must be separated by spaces for each word.**
-    - For example
+- `/LDA/lda.py`:LDA by using Collapsed Gibbs sampler with Python.You need to decide the number of `topic`.
+```python
+def main():
+    n = 100 # データの水増し用の変数
+    topic = 3 # トピック数を指定
+    data = np.loadtxt( root , dtype=np.int32)*n # 発生回数にnをかけて水増し可能
+    #print(data)
+    lda( data , topic )
+```
+**※Before running this script, you need to run  `/LDA/bow/bow.py` which creates a BoW file**
+- `/LDA/bow/bow.py`: It can generate **BoW file** which is used by `/LDA/lda.py` from `/LDA/bow/text.txt`
+- `/LDA/bow/text.txt`: You can write  sentences.   
+**※Sentences must be separated by spaces for each word.**
+    - *For example*
     ```
     内藤 は 彼女 が できない
     内藤 は 理想 が 高すぎる
@@ -18,9 +28,9 @@ What the `LDA` contains:
     室 は 顔芸 を して いる
     ```
 - Usage
-    1. Write sentences in `/LDA/bow/text.txt`
-    2. Create BoW:`python3 /LDA/bow/bow.py`
-    3. `python3 /LDA/lda_gbs.py`
+    1. Write sentences in `/LDA/bow/text.txt`  
+    2. Create BoW:`python3 /LDA/bow/bow.py`  
+    3. `python3 /LDA/lda.py`
 
 - Requirement
 
@@ -41,9 +51,22 @@ import matplotlib.pyplot as plt
 
 **What the `MLDA` contains:**  
 
-- `/MLDA/mlda.py`:MLDA by using Collapsed Gibbs sampler with Python
+- `/MLDA/mlda.py`:MLDA by using Collapsed Gibbs sampler with Python.You need to decide the number of `topic`.
+```python
+def main():
+    topic = 3
+    data = []
+    data.append( np.loadtxt( "./bof/histogram_v.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "./bow/histogram_w.txt" , dtype=np.int32)*5 )
+    mlda( data, topic, 100, "learn_result" )
+
+    data[1] = None
+    mlda( data, topic, 10, "recog_result" , "learn_result" )
+```
+**※Before running this script, you need to run `/MLDA/bow/bow.py` and `/MLDA/bof/bof.py` which create BoW and BoF file**
 - `/MLDA/bow/bow.py`: It can generate **BoW file** which is used by `/MLDA/mlda.py` from `/MLDA/bow/text.txt`
-- `/MLDA/bow/text.txt`: You can write  sentences. **Sentences must be separated by spaces for each word.**
+- `/MLDA/bow/text.txt`: You can write  sentences.  
+**※Sentences must be separated by spaces for each word.**
     - *For example*
     ```
     内藤 は 彼女 が できない
@@ -57,9 +80,9 @@ import matplotlib.pyplot as plt
 - `/MLDA/bof/bof.py`: It can generate **BoF file** which is used by `/MLDA/mlda.py` from `/MLDA/bof/images/*.png`
 
 **Usage:**
-    1. Write sentences in `/MLDA/bow/text.txt`
-    2. Create BoW:`python3 /MLDA/bow/bow.py`
-    3. Create BoF:`python3 /MLDA/bof/bof.py`
+    1. Write sentences in `/MLDA/bow/text.txt`  
+    2. Create BoW:`python3 /MLDA/bow/bow.py`  
+    3. Create BoF:`python3 /MLDA/bof/bof.py`  
     4. `python3 /MLDA/mlda.py`
 
 **Requirement:**
@@ -142,6 +165,10 @@ import torch.nn as nn
 from typing import Mapping, Optional, Tuple
 from torch.utils.data import Dataset
 ```
+
+**Usage:**
+Ongoing
+
 **References:**
 - [Implementation source of AVITM by using PyTorch](https://github.com/vlukiyanov/pt-avitm)
 - Other implementations of AVITM
