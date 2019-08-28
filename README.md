@@ -1,9 +1,9 @@
 # Implementation of LDAs
 Ongoing
-## Latent Dirichlet Allocation
+# Latent Dirichlet Allocation
 [Original paper](http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf)  
 
-What this `LDA` contains:  
+What the `LDA` contains:  
 
 - `/LDA/lda_gbs.py`:LDA by using Collapsed Gibbs sampler with Python
 - `/LDA/bow/bow.py`: It can generate **BoW file** which is used by `/LDA/lda_gbs.py` from `/LDA/bow/text.txt`
@@ -34,12 +34,12 @@ import random
 import math
 import matplotlib.pyplot as plt
 ```
-
+**References:**
 - [Implementation source of LDA](https://github.com/naka-tomo/LDA-PY)
 
 # Multimodal Latent Dirichlet Allocation
 
-**What this `MLDA` contains:**  
+**What the `MLDA` contains:**  
 
 - `/MLDA/mlda.py`:MLDA by using Collapsed Gibbs sampler with Python
 - `/MLDA/bow/bow.py`: It can generate **BoW file** which is used by `/MLDA/mlda.py` from `/MLDA/bow/text.txt`
@@ -78,6 +78,7 @@ import cv2
 import glob
 import codecs
 ```
+**References:**
 - [Implementation source of MLDA](https://github.com/naka-tomo/MLDA-PY)
 
 # Autoencoded variational infarence for topic model
@@ -85,7 +86,7 @@ import codecs
 PyTorch implementation of the **Autoencoding Variational Inference For Topic Models (AVITM)** algorithm.
 [Original paper](https://arxiv.org/abs/1703.01488)
 
-**What this `DeepLDA` contains:**  
+**What the `DeepLDA` contains:**  
 
 - `/DeepLDA/deeplda_few.py`:This is DeepLDA based on AVITM for `/few_input_data/`.
     - `/DeepLDA/few_input_data/text.txt`: You can write  sentences. **Sentences must be separated by spaces for each word.**
@@ -141,13 +142,12 @@ import torch.nn as nn
 from typing import Mapping, Optional, Tuple
 from torch.utils.data import Dataset
 ```
-
+**References:**
 - [Implementation source of AVITM by using PyTorch](https://github.com/vlukiyanov/pt-avitm)
-
-
-
-
 - Other implementations of AVITM
     - [Original TensorFlow](https://github.com/akashgit/autoencoding_vi_for_topic_models)
 
     - [PyTorch(Old version)](https://github.com/hyqneuron/pytorch-avitm)
+
+# Multimodal autoencoded variational infarence for topic model
+Ongoing
