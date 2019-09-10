@@ -110,7 +110,8 @@ PyTorch implementation of the **Autoencoding Variational Inference For Topic Mod
 **What the `DeepLDA` contains:**  
 
 - `/DeepLDA/deeplda_few.py`:This is DeepLDA based on AVITM for `/few_input_data/`.
-    - `/DeepLDA/few_input_data/text.txt`: You can write  sentences. **Sentences must be separated by spaces for each word.**
+    - `/DeepLDA/few_input_data/text.txt`: You can write  sentences.  
+     **※Sentences must be separated by spaces for each word.**
         - *For example*
         ```
         内藤 は 彼女 が できない
