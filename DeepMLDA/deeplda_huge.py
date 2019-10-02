@@ -114,8 +114,7 @@ def main(
             'perplexity': perplexity,
             'coherence': coherence,
         }, global_step=epoch)
-    # ここからCSV読み込み
-    # ここまで
+    
     ds_train = CountTensorDataset(data_train)
     ds_val = CountTensorDataset(data_val)
     autoencoder = ProdLDA(
