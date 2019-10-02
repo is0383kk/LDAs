@@ -12,3 +12,5 @@
 /DeepLDA/runs
 /DeepMLDA/topic.txt
 /DeepMLDA/runs
+/jmvae_example/*
+./jmvae_example/*
