@@ -62,6 +62,7 @@ def train(dataset: torch.utils.data.Dataset,
     autoencoder.train()
     perplexity_value = -1
     loss_value = 0
+
     for epoch in range(epochs):
         if scheduler is not None:
             scheduler.step()
@@ -69,6 +70,7 @@ def train(dataset: torch.utils.data.Dataset,
         losses = []
         for index, batch in enumerate(data_iterator):
             batch = batch[0]
+            print("batch->",batch)
             if cuda:
                 batch = batch.cuda(non_blocking=True)
             # run the batch through the autoencoder and obtain the output
@@ -151,6 +153,7 @@ def predict(dataset: torch.utils.data.Dataset,
         unit='batch',
         disable=silent,
     )
+
     features = []
     if isinstance(model, torch.nn.Module):
         model.eval()
