@@ -120,9 +120,9 @@ class ProdLDA(nn.Module):
         """
         encoded = self.encoder(batch)
         #print("encoded->"+str(encoded))
-        print("encoded->"+str(encoded)+".encoded.shape->"+str(encoded.shape))
-        print("mean->"+str(self.mean(encoded)))
-        print("logvar->"+str(self.logvar(encoded)))
+        #print("encoded->"+str(encoded)+".encoded.shape->"+str(encoded.shape))
+        #print("mean->"+str(self.mean(encoded)))
+        #print("logvar->"+str(self.logvar(encoded)))
 
         return encoded, self.mean(encoded), self.logvar(encoded)
 
@@ -134,9 +134,9 @@ class ProdLDA(nn.Module):
         """
         eps = mean.new().resize_as_(mean).normal_(mean=0, std=1)
         z = mean + logvar.exp().sqrt() * eps
-        print("z.shape->"+str(z.shape))
-        print("len(z)->",str(len(z)))
-        print("z->"+str(z))
+        #print("z.shape->"+str(z.shape))
+        #print("len(z)->",str(len(z)))
+        #print("z->"+str(z))
         """
         潜在変数zの形について
         z-> tensor([バッチサイズ,トピック数])
