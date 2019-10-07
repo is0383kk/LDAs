@@ -135,6 +135,8 @@ class ProdLDA(nn.Module):
         eps = mean.new().resize_as_(mean).normal_(mean=0, std=1)
         z = mean + logvar.exp().sqrt() * eps
         #print("z.shape->"+str(z.shape))
+        #print("len(z)->",str(len(z)))
+        #print("z->"+str(z))
         return self.decoder(z)
 
     def forward(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
