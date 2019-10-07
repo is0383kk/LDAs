@@ -7,9 +7,9 @@ import sys
 
 # ハイパーパラメータの定義
 TOPIC_N = 3 # トピック数
-VOCABULARY_SIZE = 150 # 単語数
-DOC_NUM = 1000 # 文書数
-TERM_PER_DOC = 200 # ドキュメントごとの単語数
+VOCABULARY_SIZE = 5 # 単語数
+DOC_NUM = 10 # 文書数
+TERM_PER_DOC = 10 # ドキュメントごとの単語数
 
 beta = [0.01 for i in range(VOCABULARY_SIZE)] # ディレクレ分布のパラメータ(グラフィカルモデル左端)
 alpha = [0.9 for i in range(TOPIC_N)] # #ディレクレ分布のパラメータ(グラフィカルモデル右端)
@@ -61,7 +61,7 @@ for i in range(DOC_NUM):
         if not w_assignment in buffer:
             buffer[w_assignment] = 0
         buffer[w_assignment] = buffer[w_assignment] + 1
-
+    print("buffer->",buffer)
     # output
     output_f.write(str(i)+'\t'+str(TERM_PER_DOC)+'\t')
     for word_id, word_count in buffer.items():
@@ -77,6 +77,7 @@ for i in range(DOC_NUM):
         theta_f.write(str(k)+':'+str(theta[0][k])+' ')
     theta_f.write('\n')
     hist_i += 1
+
 z_f.close()
 theta_f.close()
 output_f.close()
@@ -100,4 +101,11 @@ output_f.write('alpha:'+str(alpha[0])+'\n')
 output_f.write('beta:'+str(beta[0])+'\n')
 output_f.close()
 print(hist)
+vocab = {}
+for i in range(len(hist[0])):
+    vocab["ID->"+str(i)] = i
+print("vocab->",vocab)
+#for i in range(DOC_NUM):
+#    for j in range(TERM_PER_DOC):
+#        print("hist"+"["+str(int(i))+"]"+"["+str(int(j))+"]"+" ==> "+str(hist[i][j]))
 numpy.savetxt( "hist.txt", hist, fmt=str("%d") )
