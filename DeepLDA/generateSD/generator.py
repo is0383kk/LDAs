@@ -6,10 +6,10 @@ import numpy.random
 import sys
 
 # ハイパーパラメータの定義
-TOPIC_N = 2 # トピック数
-VOCABULARY_SIZE = 5 # 単語数
-DOC_NUM = 100 # 文書数
-TERM_PER_DOC = 10 # ドキュメントごとの単語数
+TOPIC_N = 3 # トピック数
+VOCABULARY_SIZE = 100 # 単語数
+DOC_NUM = 1500 # 文書数
+TERM_PER_DOC = 100 # ドキュメントごとの単語数
 
 beta = [0.01 for i in range(VOCABULARY_SIZE)] # ディレクレ分布のパラメータ(グラフィカルモデル左端)
 alpha = [0.9 for i in range(TOPIC_N)] # #ディレクレ分布のパラメータ(グラフィカルモデル右端)
@@ -18,7 +18,10 @@ FILE_NAME = "synthetic_data" # 保存先のファイル名
 
 
 hist = numpy.zeros( (DOC_NUM, TERM_PER_DOC) ) # ヒストグラム格納用の変数
+document_label = numpy.zeros(DOC_NUM) # 単語の潜在変数を元に文書ラベルを決定する変数
+z_max = -114514 # z_countと比較するための変数
 
+#print(document_label[0])
 #print(hist)
 #print(hist[0])
 
@@ -61,22 +64,34 @@ for i in range(DOC_NUM):
         if not w_assignment in buffer:
             buffer[w_assignment] = 0
         buffer[w_assignment] = buffer[w_assignment] + 1
-    print("buffer->",buffer)
-    # output
+    #print("buffer->",buffer)
+    
+    # ここから各情報をファイルに保存
     output_f.write(str(i)+'\t'+str(TERM_PER_DOC)+'\t')
     for word_id, word_count in buffer.items():
         output_f.write(str(word_id)+':' + str(word_count)+' ')
         hist[hist_i,word_id] = word_count
     output_f.write('\n')
     z_f.write(str(i)+'\t'+str(TERM_PER_DOC)+'\t')
-    for z_id, z_count in z_buffer.items():
+    for z_id, z_count in z_buffer.items():        
+        #print("hist_i->"+str(hist_i)+"---------------------")
+        
+        # z_countが最大の時のz_idを文書ラベルとして採用する
+        
+        if (z_max <= z_count):
+            z_max = z_count
+            #print("z_max,z_count",z_max,z_count)
+            document_label[hist_i] = z_id
+        
         z_f.write(str(z_id)+':'+str(z_count)+' ')
     z_f.write('\n')
     theta_f.write(str(i)+'\t')
     for k in range(TOPIC_N):
         theta_f.write(str(k)+':'+str(theta[0][k])+' ')
     theta_f.write('\n')
-    hist_i += 1
+    
+    hist_i += 1 # ヒストグラムの縦のインデックス
+    z_max = -114514 # z_countと比較する最大値の初期化
 
 z_f.close()
 theta_f.close()
@@ -100,12 +115,6 @@ output_f.write('TERM_PER_DOC:'+str(TERM_PER_DOC)+'\n')
 output_f.write('alpha:'+str(alpha[0])+'\n')
 output_f.write('beta:'+str(beta[0])+'\n')
 output_f.close()
-print(hist)
-vocab = {}
-for i in range(len(hist[0])):
-    vocab["ID->"+str(i)] = i
-print("vocab->",vocab)
-#for i in range(DOC_NUM):
-#    for j in range(TERM_PER_DOC):
-#        print("hist"+"["+str(int(i))+"]"+"["+str(int(j))+"]"+" ==> "+str(hist[i][j]))
+#print(document_label)
 numpy.savetxt( "hist.txt", hist, fmt=str("%d") )
+numpy.savetxt( "label.txt", document_label, fmt=str("%d") )

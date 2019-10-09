@@ -30,13 +30,13 @@ from torch.utils.data import DataLoader
     '--batch-size',
     help='バッチサイズ (default 200).',
     type=int,
-    default=10
+    default=32
 )
 @click.option(
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=10
+    default=50
 )
 @click.option(
     '--top-words',
@@ -51,19 +51,22 @@ from torch.utils.data import DataLoader
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 2 # トピックの数を事前に定義
+    define_topic = 3 # トピックの数を事前に定義
     hist = np.loadtxt( "generateSD/hist.txt" , dtype=np.int32)
     hist = np.array(hist,dtype=float)
     """
     データセットの読み込み
     BoFヒストグラムの作成
     """
-    print("作成したヒストグラム->"+str(hist))
+    print("作成したヒストグラム->\n"+str(hist))
+    print(hist.shape)
     print("len(hist)->",len(hist[0]))
     vocab = {}
     for i in range(len(hist[0])):
         vocab["ID"+str(i)] = i
     print("vocab->",vocab)
+    label = np.loadtxt( "generateSD/label.txt" , dtype=np.int32)
+    print(label)
     """
     vocab
     {'0番目の特徴': 0,'1番目の特徴':1 }
@@ -108,8 +111,8 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     ds_val = TensorDataset(torch.from_numpy(hist).float())
     autoencoder = ProdLDA(
         in_dimension=len(hist[0]),# 本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
-        hidden1_dimension=10,
-        hidden2_dimension=10,
+        hidden1_dimension=100,
+        hidden2_dimension=100,
         topics=define_topic
     )
     if cuda:
@@ -155,20 +158,44 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     """
     評価
     """
+    test_batch = 100
     dataloader = DataLoader(
         ds_train,
-        batch_size=20,
+        batch_size=test_batch,
     )
-
+    label = [] # 仮のラベル
+    for i in range(test_batch):
+        label.append(i)
+    label = np.array(label)
+    #print(label)
+    print("decoder_weight->\n"+str(decoder_weight.t()))
+    print("decoder_weight.shape->\n"+str(decoder_weight.t().shape))
+    print("decoder_weight.topk->\n"+str(decoder_weight.topk(20, dim=0)[1].t()))
     autoencoder.eval()
     from torch.autograd import Variable
+    # 潜在変数の可視化
+    from sklearn.manifold import TSNE
+    from random import random
+    import matplotlib.pyplot as plt
+
+    # colors = ["red", "green", "blue", "orange", "purple", "brown", "fuchsia", "grey", "olive", "lightblue"]
+    def visualize_zs(zs, labels):
+        plt.figure(figsize=(10,10))
+        points = TSNE(n_components=2, random_state=0).fit_transform(zs)
+        for p, l in zip(points, labels):
+            plt.scatter(p[0], p[1], marker="${}$".format(l))
+        plt.savefig('figure.png')
+        #plt.show()
+
     #print("autoencoder->",autoencoder)
-    #for x,t in enumerate(dataloader):
+    for x,t in enumerate(dataloader):
+        print(x,t)
         #print("x->",t[0])
         #print("autoencoder(t[0])->",autoencoder.encode(t[0]))
+        #print("autoencoder(t[0])->",autoencoder(t[0]))
         #a, b, c = autoencoder.encode(Variable(t[0], volatile=True))
-        #a, b, c = autoencoder.encode(t[0])
-        #print("a->",a)
+        a, b, c, z = autoencoder(t[0])
+        z = z.cpu()
         #print("a.shape->",a.shape)
         #print("b->",b)
         #print("c->",c)
@@ -181,6 +208,9 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         #print("len(z)->",str(len(z)))
         #print("z->"+str(z))
         #print(autoencoder)
+
+        visualize_zs(z.detach().numpy(), label)
+        break
 
 if __name__ == '__main__':
     main()

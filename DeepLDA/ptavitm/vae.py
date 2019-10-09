@@ -139,10 +139,15 @@ class ProdLDA(nn.Module):
         #print("z->"+str(z))
         return self.decoder(z)
 
+    def sample_z(self,mean,logvar): # 独自で定義
+        eps = mean.new().resize_as_(mean).normal_(mean=0, std=1)
+        return mean + logvar.exp().sqrt() * eps
+
     def forward(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         _, mean, logvar = self.encode(batch)
         recon = self.decode(mean, logvar)
-        return recon, mean, logvar
+        z_hoge = self.sample_z(mean, logvar)
+        return recon, mean, logvar, z_hoge
 
     def loss(self,
              input_tensor: torch.Tensor,

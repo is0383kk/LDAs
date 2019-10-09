@@ -73,9 +73,9 @@ def train(dataset: torch.utils.data.Dataset,
                 batch = batch.cuda(non_blocking=True)
             # run the batch through the autoencoder and obtain the output
             if corruption is not None:
-                recon, mean, logvar = autoencoder(F.dropout(batch, corruption))
+                recon, mean, logvar, sample_z = autoencoder(F.dropout(batch, corruption))
             else:
-                recon, mean, logvar = autoencoder(batch)
+                recon, mean, logvar, sample_z = autoencoder(batch)
             # calculate the loss and backprop
             loss = autoencoder.loss(batch, recon, mean, logvar).mean()
             loss_value = float(loss.mean().item())
@@ -112,7 +112,7 @@ def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda
         batch = batch[0]
         if cuda:
             batch = batch.cuda(non_blocking=True)
-        recon, mean, logvar = model(batch)
+        recon, mean, logvar, sample_z = model(batch)
         losses.append(model.loss(batch, recon, mean, logvar).detach().cpu())
         counts.append(batch.sum(1).detach().cpu())
     return float((torch.cat(losses) / torch.cat(counts)).mean().exp().item())
