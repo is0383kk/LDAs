@@ -3,7 +3,9 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
+# グラフ用
+import matplotlib.pyplot as plt
+import numpy as np
 
 def train(dataset: torch.utils.data.Dataset,
           autoencoder: torch.nn.Module,
@@ -102,6 +104,15 @@ def train(dataset: torch.utils.data.Dataset,
             autoencoder.eval()
             epoch_callback(epoch, autoencoder)
             autoencoder.train()
+    np.save('./runs/loss_list.npy', np.array(losses))
+    loss_list = np.load('./runs/loss_list.npy')
+    plt.plot(losses)
+    plt.xlabel('epoch')
+    plt.ylabel('loss')
+    plt.savefig('loss.png')
+    plt.grid()
+
+    #torch.save(model.state_dict(), 'vae.pth')
 
 
 def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda: bool = False, silent: bool = False):

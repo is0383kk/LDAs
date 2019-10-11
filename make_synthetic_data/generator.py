@@ -7,11 +7,11 @@ import sys
 
 # ハイパーパラメータの定義
 TOPIC_N = 3 # トピック数
-VOCABULARY_SIZE = 100 # 単語数
-DOC_NUM = 3000 # 文書数
-TERM_PER_DOC = 100 # ドキュメントごとの単語数
+VOCABULARY_SIZE = 50 # 単語数
+DOC_NUM = 200 # 文書数
+TERM_PER_DOC = 50 # ドキュメントごとの単語数
 
-beta = [0.01 for i in range(VOCABULARY_SIZE)] # ディレクレ分布のパラメータ(グラフィカルモデル右端)
+beta = [0.09 for i in range(VOCABULARY_SIZE)] # ディレクレ分布のパラメータ(グラフィカルモデル右端)
 alpha = [0.5 for i in range(TOPIC_N)] # #ディレクレ分布のパラメータ(グラフィカルモデル左端)
 #beta[0] = 0.9
 #beta[1] = 0.9
@@ -34,9 +34,11 @@ z_max = -114514 # z_countと比較するための変数
 phi = []
 
 for i in range(TOPIC_N):
-    #topic = numpy.random.mtrand.dirichlet(beta, size = 1)
-    topic = numpy.ones((1,VOCABULARY_SIZE)) * 0.001
-    topic[0][i] += 0.9
+    topic = numpy.random.mtrand.dirichlet(beta, size = 1)
+    
+    #topic = numpy.ones((1,VOCABULARY_SIZE)) * 0.05
+    #topic[0][i] += 0.5
+    
     phi.append(topic)
     
 print("topic->",topic)
@@ -81,6 +83,14 @@ for i in range(DOC_NUM):
     #print("buffer->",buffer)
     #print("theta->",theta)
     #print("phi->",phi)
+    print("EPOCH={}----------------------".format(i))
+    print("z->", z)
+    print("z_assignment->", z_assignment)
+    print("z_buffer->", z_buffer)
+    print("----------------------")
+    print("w->", w)
+    print("w_assignment->", w_assignment)
+    print("buffer->", buffer)
     
     """
     ここまで人口データ作成
@@ -96,7 +106,6 @@ for i in range(DOC_NUM):
         #print("hist_i->"+str(hist_i)+"---------------------")
         
         # z_countが最大の時のz_idを文書ラベルとして採用する
-        
         if (z_max <= z_count):
             z_max = z_count
             #print("z_max,z_count",z_max,z_count)

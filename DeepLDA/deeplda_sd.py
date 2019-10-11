@@ -30,13 +30,13 @@ from torch.utils.data import DataLoader
     '--batch-size',
     help='バッチサイズ (default 200).',
     type=int,
-    default=128+16
+    default=16*1
 )
 @click.option(
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=50
+    default=1000
 )
 @click.option(
     '--top-words',
@@ -109,8 +109,8 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     ds_val = TensorDataset(torch.from_numpy(hist).float(),torch.from_numpy(label).int())
     autoencoder = ProdLDA(
         in_dimension=len(hist[0]),# 本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
-        hidden1_dimension=90,
-        hidden2_dimension=90,
+        hidden1_dimension=50,
+        hidden2_dimension=50,
         topics=define_topic
     )
     if cuda:
@@ -168,7 +168,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     #print(label)
     print("decoder_weight->\n"+str(decoder_weight.t()))
     print("decoder_weight.shape->\n"+str(decoder_weight.t().shape))
-    print("decoder_weight.topk->\n"+str(decoder_weight.topk(20, dim=0)[1].t()))
+    print("decoder_weight.topk->\n"+str(decoder_weight.topk(top_words, dim=0)[1].t()))
     autoencoder.eval()
     from torch.autograd import Variable
     # 潜在変数の可視化
@@ -178,12 +178,13 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
 
     #colors = ["red", "green", "blue", "orange", "purple", "brown", "fuchsia", "grey", "olive", "lightblue"]
     colors = ["red", "green", "blue"]
+    #colors = ["red", "green", "blue","orange"]
     def visualize_zs(zs, labels):
         plt.figure(figsize=(10,10))
         points = TSNE(n_components=2, random_state=0).fit_transform(zs)
         for p, l in zip(points, labels):
             plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l])
-        plt.savefig('figure.png')
+        plt.savefig('document_z.png')
         #plt.show()
 
     #print("autoencoder->",autoencoder)
@@ -196,6 +197,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         a, b, c, z = autoencoder(t[0])
         z = z.cpu()
         t = t[1].cpu()
+
         #print("a.shape->",a.shape)
         #print("b->",b)
         #print("c->",c)
