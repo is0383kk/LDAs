@@ -68,6 +68,7 @@ def train(dataset: torch.utils.data.Dataset,
         data_iterator = tqdm(dataloader,leave=True,unit='batch',postfix={'epo': epoch,'lss': '%.6f' % 0.0,'ppx': '%.6f' % -1,},disable=silent)
         losses = []
         for index, batch in enumerate(data_iterator):
+            #print("batch->",batch)
             batch = batch[0]
             if cuda:
                 batch = batch.cuda(non_blocking=True)
