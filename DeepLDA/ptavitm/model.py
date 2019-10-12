@@ -87,7 +87,7 @@ def train(dataset: torch.utils.data.Dataset,
             optimizer.step(closure=None)
             # log losses
             losses.append(loss_value)
-            print(losses)
+            #print(losses)
             data_iterator.set_postfix(epo=epoch,lss='%.6f' % loss_value,ppx='%.6f' % perplexity_value)
         if update_freq is not None and epoch % update_freq == 0:
             average_loss = (sum(losses) / len(losses)) if len(losses) > 0 else -1

@@ -30,13 +30,13 @@ from torch.utils.data import DataLoader
     '--batch-size',
     help='バッチサイズ (default 200).',
     type=int,
-    default=16*1
+    default=2**5
 )
 @click.option(
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=100
+    default=30
 )
 @click.option(
     '--top-words',
@@ -170,8 +170,10 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     import matplotlib.pyplot as plt
 
     #colors = ["red", "green", "blue", "orange", "purple", "brown", "fuchsia", "grey", "olive", "lightblue"]
-    colors = ["red", "green", "blue"]
-    #colors = ["red", "green", "blue","orange"]
+    #colors = ["red", "green", "blue"]
+    #colors = ["red", "green", "blue", "orange"]
+    colors = ["red", "green", "blue", "orange", "purple"]
+
     def visualize_zs(zs, labels):
         plt.figure(figsize=(10,10))
         points = TSNE(n_components=2, random_state=0).fit_transform(zs)
