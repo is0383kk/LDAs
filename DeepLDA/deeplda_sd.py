@@ -36,7 +36,7 @@ from torch.utils.data import DataLoader
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=1000
+    default=100
 )
 @click.option(
     '--top-words',
@@ -91,25 +91,13 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
             [reverse_vocab[item.item()] for item in topic]
             for topic in decoder_weight.topk(top_words, dim=0)[1].t()
         ]
-        """
-        topics:各トピックの上位単語をリストで格納
-        """
-        print("topics->"+str(topics))
-        """
-        １訓練訓練終了後に各トピックの単語をテキストファイルに保存
-        """
-        file_name = "./topic.txt"
-        file = open(file_name, 'w')
-        for index, topic in enumerate(topics): # 各トピック(50)を印字してファイルに保存
-            print(str(index)+"番目のトピック" + ':' + ','.join(topic))
-            file.write(str(index) + ':' + ','.join(topic) + "\n")
-        file.close()
+
     #################################################################################
     ds_train = TensorDataset(torch.from_numpy(hist).float(),torch.from_numpy(label).int())
     ds_val = TensorDataset(torch.from_numpy(hist).float(),torch.from_numpy(label).int())
     autoencoder = ProdLDA(
-        in_dimension=len(hist[0]),# 本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
-        hidden1_dimension=50,
+        in_dimension=len(hist[0]),# 入力,本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
+        hidden1_dimension=50, # 中間層
         hidden2_dimension=50,
         topics=define_topic
     )
@@ -140,11 +128,17 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         [reverse_vocab[item.item()] for item in topic]
         for topic in decoder_weight.topk(top_words, dim=0)[1].t()
     ]
-    #print(topics)
-    for topic in topics:
+
+    """
+    各トピックの単語をテキストファイルに保存
+    """
+    file_name = "./top_words.txt"
+    file = open(file_name, 'w')
+    for index, topic in enumerate(topics):
         print(','.join(topic))
-        #file = open(file_name, 'w')
-        #file.write(','.join(topic))
+        file.write(str(index) + ':' + ','.join(topic) + "\n")
+    file.close()
+
     if not testing_mode:
         writer.add_embedding(
             autoencoder.encoder.linear1.weight.detach().cpu().t(),
@@ -153,24 +147,23 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         )
 
     writer.close()
+    ##################メイン処理はここまで########################################################
     """
-    評価
+    各文書の潜在変数を可視化してクラスタリング
     """
-    test_batch = 100
+    test_batch = 200
     dataloader = DataLoader(
         ds_train,
         batch_size=test_batch,
     )
-    label = [] # 仮のラベル
-    for i in range(test_batch):
-        label.append(i)
-    label = np.array(label)
-    #print(label)
+
+
     print("decoder_weight->\n"+str(decoder_weight.t()))
     print("decoder_weight.shape->\n"+str(decoder_weight.t().shape))
     print("decoder_weight.topk->\n"+str(decoder_weight.topk(top_words, dim=0)[1].t()))
+
     autoencoder.eval()
-    from torch.autograd import Variable
+
     # 潜在変数の可視化
     from sklearn.manifold import TSNE
     from random import random
@@ -187,31 +180,31 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         plt.savefig('document_z.png')
         #plt.show()
 
-    #print("autoencoder->",autoencoder)
+
     for x,t in enumerate(dataloader):
+        """
+        x:インデックス（使わない）
+        t[0]:文書
+        t[1]:人口データを元に付けた文書ラベル
+        """
         #print("t[0]->",t[0])
         #print("label->",t[1])
         #print("autoencoder(t[0])->",autoencoder.encode(t[0]))
         #print("autoencoder(t[0])->",autoencoder(t[0]))
         #a, b, c = autoencoder.encode(Variable(t[0], volatile=True))
-        a, b, c, z = autoencoder(t[0])
+        recon, mean, logvar, z = autoencoder(t[0]) # 訓練後の潜在変数の抽出
         z = z.cpu()
-        t = t[1].cpu()
+        z_label = t[1].cpu()
 
-        #print("a.shape->",a.shape)
-        #print("b->",b)
-        #print("c->",c)
-        #print("y.shape->"+str(y.shape))
-        #print("len(y)->",str(len(y)))
-        #print("y->"+str(y))
-
-        #print("model(x)->",model(x))
+        """
+        潜在変数zの確認
+        """
         #print("z.shape->"+str(z.shape))
         #print("len(z)->",str(len(z)))
-        print("z->"+str(z))
-        #print(autoencoder)
+        #print("z->"+str(z))
 
-        visualize_zs(z.detach().numpy(), t.cpu().detach().numpy())
+
+        visualize_zs(z.detach().numpy(), z_label.cpu().detach().numpy())
         break
 
 if __name__ == '__main__':
