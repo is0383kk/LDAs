@@ -175,6 +175,10 @@ class ProdLDA(nn.Module):
         prior_var = self.prior_var.expand_as(posterior_logvar)
         prior_logvar = self.prior_logvar.expand_as(posterior_logvar)
         var_division = posterior_logvar.exp() / prior_var
+        #print("posterior_mean->{}".format(posterior_mean))
+        #print("prior_mean->{}".format(prior_mean))
+        #print("posterior_var->{}".format(posterior_var))
+        #print("prior_logvar->{}".format(prior_logvar))
         diff = posterior_mean - prior_mean
         diff_term = diff * diff / prior_var
         logvar_division = prior_logvar - posterior_logvar

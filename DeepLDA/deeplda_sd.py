@@ -30,13 +30,13 @@ from torch.utils.data import DataLoader
     '--batch-size',
     help='バッチサイズ (default 200).',
     type=int,
-    default=2**5
+    default=8*4
 )
 @click.option(
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=30
+    default=10
 )
 @click.option(
     '--top-words',
@@ -158,9 +158,9 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     )
 
 
-    print("decoder_weight->\n"+str(decoder_weight.t()))
-    print("decoder_weight.shape->\n"+str(decoder_weight.t().shape))
-    print("decoder_weight.topk->\n"+str(decoder_weight.topk(top_words, dim=0)[1].t()))
+    #print("decoder_weight->\n"+str(decoder_weight.t()))
+    #print("decoder_weight.shape->\n"+str(decoder_weight.t().shape))
+    #print("decoder_weight.topk->\n"+str(decoder_weight.topk(top_words, dim=0)[1].t()))
 
     autoencoder.eval()
 
@@ -168,6 +168,14 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     from sklearn.manifold import TSNE
     from random import random
     import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    #prior_mean = torch.full((200,3),0.0000)
+    #prior_logvar = torch.full((200,3),-0.4055)
+    #eps = prior_mean.new().resize_as_(prior_mean).normal_(mean=0, std=1)
+    #prior_z = prior_mean + prior_logvar.exp().sqrt() * eps
+    #prior_z = prior_z.cpu()
+    #print("prior_z-.{}".format(prior_z))
 
     #colors = ["red", "green", "blue", "orange", "purple", "brown", "fuchsia", "grey", "olive", "lightblue"]
     #colors = ["red", "green", "blue"]
@@ -175,13 +183,16 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     colors = ["red", "green", "blue", "orange", "purple"]
 
     def visualize_zs(zs, labels):
-        plt.figure(figsize=(10,10))
+        #plt.figure(figsize=(10,10))
+        fig = plt.figure(figsize=(10,10))
+        #ax = Axes3D(fig)
         points = TSNE(n_components=2, random_state=0).fit_transform(zs)
         for p, l in zip(points, labels):
             plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l])
-        plt.savefig('document_z.png')
+            #ax.scatter(p[0], p[1], p[2], marker="${}$".format(l),c=colors[l])
+        plt.savefig('document_z2d.png')
+        #plt.savefig('document_z3d.png')
         #plt.show()
-
 
     for x,t in enumerate(dataloader):
         """
@@ -197,7 +208,8 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         recon, mean, logvar, z = autoencoder(t[0]) # 訓練後の潜在変数の抽出
         z = z.cpu()
         z_label = t[1].cpu()
-
+        #print("mean->",mean)
+        #print("logvar->",logvar)
         """
         潜在変数zの確認
         """
@@ -205,7 +217,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         #print("len(z)->",str(len(z)))
         #print("z->"+str(z))
 
-
+        #visualize_zs(prior_z.detach().numpy(), z_label.cpu().detach().numpy())
         visualize_zs(z.detach().numpy(), z_label.cpu().detach().numpy())
         break
 
