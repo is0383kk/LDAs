@@ -30,13 +30,13 @@ from torch.utils.data import DataLoader
     '--batch-size',
     help='バッチサイズ (default 200).',
     type=int,
-    default=8*4
+    default=10
 )
 @click.option(
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=10
+    default=50
 )
 @click.option(
     '--top-words',
@@ -59,7 +59,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     BoFヒストグラムの作成
     """
     print("作成したヒストグラム->\n"+str(hist))
-    print(hist.shape)
+    print("hist.shape->{}".format(hist.shape))
     print("len(hist)->",len(hist[0]))
     vocab = {}
     for i in range(len(hist[0])):
@@ -151,7 +151,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     """
     各文書の潜在変数を可視化してクラスタリング
     """
-    test_batch = 200
+    test_batch = 100
     dataloader = DataLoader(
         ds_train,
         batch_size=test_batch,
@@ -176,11 +176,19 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     #prior_z = prior_mean + prior_logvar.exp().sqrt() * eps
     #prior_z = prior_z.cpu()
     #print("prior_z-.{}".format(prior_z))
+    from sklearn.metrics.cluster import adjusted_rand_score as ar
 
     #colors = ["red", "green", "blue", "orange", "purple", "brown", "fuchsia", "grey", "olive", "lightblue"]
-    #colors = ["red", "green", "blue"]
-    #colors = ["red", "green", "blue", "orange"]
-    colors = ["red", "green", "blue", "orange", "purple"]
+    if define_topic == 2:
+        colors = ["red", "green", "blue"]
+    elif define_topic == 3:
+        colors = ["red", "green", "blue"]
+    elif define_topic == 4:
+        colors = ["red", "green", "blue", "orange"]
+    elif define_topic == 5:
+        colors = ["red", "green", "blue", "orange", "purple"]
+    elif define_topic == 10:
+        colors = ["red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf']
 
     def visualize_zs(zs, labels):
         #plt.figure(figsize=(10,10))
@@ -188,9 +196,12 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         #ax = Axes3D(fig)
         points = TSNE(n_components=2, random_state=0).fit_transform(zs)
         for p, l in zip(points, labels):
-            plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l])
+            plt.title("Latent space (Topic:"+str(define_topic)+", Doc:"+str(hist.shape[1])+", Words:"+str(hist.shape[0])+")", fontsize=24)
+            plt.xlabel("Latent space:xlabel", fontsize=21)
+            plt.ylabel("Latent space:ylabel", fontsize=21)
+            plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
             #ax.scatter(p[0], p[1], p[2], marker="${}$".format(l),c=colors[l])
-        plt.savefig('document_z2d.png')
+        plt.savefig('./sample_z/'+'k'+str(define_topic)+'v'+str(hist.shape[1])+'d'+str(hist.shape[0])+'.png')
         #plt.savefig('document_z3d.png')
         #plt.show()
 
@@ -206,8 +217,15 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         #print("autoencoder(t[0])->",autoencoder(t[0]))
         #a, b, c = autoencoder.encode(Variable(t[0], volatile=True))
         recon, mean, logvar, z = autoencoder(t[0]) # 訓練後の潜在変数の抽出
+
         z = z.cpu()
         z_label = t[1].cpu()
+
+        #z2_label = t[1].cpu()
+        #print("ARI->",ar(z_label.numpy(),z2_label.numpy()))
+
+        #print("autoencoder.decode(mean,logvar)->{}".format(autoencoder.decode(mean,logvar))) # batch x １文書中の単語数
+        #print("autoencoder.decode(mean,logvar)->{}".format(autoencoder.decode(mean,logvar).shape))
         #print("mean->",mean)
         #print("logvar->",logvar)
         """

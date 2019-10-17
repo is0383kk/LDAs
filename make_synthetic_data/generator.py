@@ -6,10 +6,10 @@ import sys
 import click
 
 @click.command()
-@click.option('--topic_n', help = 'トピック数', type=int, default = 3)
-@click.option('--vacabulary_size', help = '単語数', type=int, default = 50)
-@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 1500)
-@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 50)
+@click.option('--topic_n', help = 'トピック数', type=int, default = 10)
+@click.option('--vacabulary_size', help = '単語数', type=int, default = 30)
+@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 50)
+@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 30)
 @click.option('--mode', help = 'zを固定するかどうか', type=bool, default = True)
 
 def main(topic_n, 
@@ -46,12 +46,20 @@ def main(topic_n,
 
 	# 各トピックの単語にわたる多項分布を生成
 	phi = []
-
+	topic = []
 	for i in range(TOPIC_N):
-		topic = np.random.mtrand.dirichlet(beta, size = 1)
+		if (MODE == True):
+			beta = [0.1 for i in range(VOCABULARY_SIZE)]
+			#beta[0] = 10
+			topic = np.random.mtrand.dirichlet(beta, size = 1)
+			print("topic->{}".format(topic))
+		else:
+			topic = np.random.mtrand.dirichlet(beta, size = 1)
+			print("topic->{}".format(topic))
+		
 		phi.append(topic)
     
-	#print("phi->",phi)
+	print("phi->",phi)
 	# 各ファイル変数
 	output_f = open(FILE_NAME+'.doc','w')
 	z_f = open(FILE_NAME+'.z_feature','w')
@@ -102,6 +110,7 @@ def main(topic_n,
 				z_buffer[z_assignment] = 0
 			z_buffer[z_assignment] = z_buffer[z_assignment] + 1
 			# トピックzからサンプリングされる観測w
+			
 			w = np.random.multinomial(1,phi[z_assignment][0],size = 1)
 			w_assignment = 0
 			for k in range(VOCABULARY_SIZE):
@@ -121,9 +130,9 @@ def main(topic_n,
 		#print("z_assignment->", z_assignment)
 		#print("z_buffer->", z_buffer)
 		#print("----------------------")
-		#print("w->", w)
-		#print("w_assignment->", w_assignment)
-		#print("buffer->", buffer)
+		print("w->", w)
+		print("w_assignment->", w_assignment)
+		print("buffer->", buffer)
 
 		"""
 		ここまで人口データ作成
