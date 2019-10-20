@@ -30,7 +30,7 @@ from torch.utils.data import DataLoader
     '--batch-size',
     help='バッチサイズ (default 200).',
     type=int,
-    default=10
+    default=32
 )
 @click.option(
     '--epochs',
@@ -196,7 +196,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         #ax = Axes3D(fig)
         points = TSNE(n_components=2, random_state=0).fit_transform(zs)
         for p, l in zip(points, labels):
-            plt.title("Latent space (Topic:"+str(define_topic)+", Doc:"+str(hist.shape[1])+", Words:"+str(hist.shape[0])+")", fontsize=24)
+            plt.title("Latent space (Topic:"+str(define_topic)+", Doc:"+str(hist.shape[0])+", Words:"+str(hist.shape[1])+")", fontsize=24)
             plt.xlabel("Latent space:xlabel", fontsize=21)
             plt.ylabel("Latent space:ylabel", fontsize=21)
             plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
