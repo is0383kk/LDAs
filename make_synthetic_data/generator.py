@@ -6,10 +6,10 @@ import sys
 import click
 
 @click.command()
-@click.option('--topic_n', help = 'トピック数', type=int, default = 10)
-@click.option('--vacabulary_size', help = '単語数', type=int, default = 30)
-@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 50)
-@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 30)
+@click.option('--topic_n', help = 'トピック数', type=int, default = 3)
+@click.option('--vacabulary_size', help = '単語数', type=int, default = 50)
+@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 1000)
+@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 50)
 @click.option('--mode', help = 'zを固定するかどうか', type=bool, default = True)
 
 def main(topic_n, 
@@ -26,7 +26,7 @@ def main(topic_n,
 	MODE = mode
 
 	beta = [0.09 for i in range(VOCABULARY_SIZE)] # ディレクレ分布のパラメータ(グラフィカルモデル右端)
-	alpha = [0.3 for i in range(TOPIC_N)] # #ディレクレ分布のパラメータ(グラフィカルモデル左端)
+	alpha = [1.0 for i in range(TOPIC_N)] # #ディレクレ分布のパラメータ(グラフィカルモデル左端)
 
 
 	#print("alpha->",alpha)
@@ -186,7 +186,15 @@ def main(topic_n,
 	output_f.write('alpha:'+str(alpha[0])+'\n')
 	output_f.write('beta:'+str(beta[0])+'\n')
 	output_f.close()
+	#print("label->{}".format(len(document_label)))
+	#print("label->{}".format(document_label))
 	print("\nremove_label->",remove_label)
+	if len(remove_label) != 0:
+		hist = np.delete(hist,remove_label,0)
+		document_label = np.delete(document_label,remove_label,0)
+	#print("hist->{}".format(len(document_label)))
+	#print("hist->{}".format(document_label))
+	#print("label->{}".format(document_label))
 	#print(document_label)
 	np.savetxt( "hist.txt", hist, fmt=str("%d") )
 	np.savetxt( "label.txt", document_label, fmt=str("%d") )
