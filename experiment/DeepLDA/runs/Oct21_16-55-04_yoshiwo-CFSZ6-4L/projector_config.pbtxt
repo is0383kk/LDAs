@@ -1,0 +1,5 @@
+embeddings {
+tensor_name: "feature_embeddings:00000"
+tensor_path: "00000/feature_embeddings/tensors.tsv"
+metadata_path: "00000/feature_embeddings/metadata.tsv"
+}

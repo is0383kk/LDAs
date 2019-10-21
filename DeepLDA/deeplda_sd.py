@@ -1,3 +1,6 @@
+#実行時間の計測
+import time
+#メイン処理
 import glob
 import click
 import numpy as np
@@ -51,6 +54,7 @@ from torch.utils.data import DataLoader
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
+    t1 = time.time() # 処理前の時刻
     define_topic = 3 # トピックの数を事前に定義
     hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/make_synthetic_data/hist.txt" , dtype=float)
     label = np.loadtxt( "/home/yoshiwo/workspace/res/study/make_synthetic_data/label.txt" , dtype=np.int32)
@@ -147,6 +151,11 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         )
 
     writer.close()
+    t2 = time.time()
+    # 経過時間を表示
+    elapsed_time = t2-t1
+    print(f"経過時間：{elapsed_time}")
+
     ##################メイン処理はここまで########################################################
     """
     各文書の潜在変数を可視化してクラスタリング
