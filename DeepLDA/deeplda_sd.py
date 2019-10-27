@@ -9,9 +9,6 @@ import torch
 from torch.utils.data import TensorDataset
 from tensorboardX import SummaryWriter
 import pickle
-# BoFヒストグラム作成用のmodule
-from module.bow import make_bof
-from module.bow import make_codebook
 # DeepLDA用の訓練用関数とvaeモデル
 from ptavitm.model import train
 from ptavitm.vae import ProdLDA
@@ -27,7 +24,7 @@ from torch.utils.data import DataLoader
     '--cuda',
     help='CUDAを使用するかどうか (default False).',
     type=bool,
-    default=False
+    default=True
 )
 @click.option(
     '--batch-size',
@@ -56,8 +53,8 @@ from torch.utils.data import DataLoader
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
     t1 = time.time() # 処理前の時刻
     define_topic = 3 # トピックの数を事前に定義
-    hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/make_synthetic_data/hist.txt" , dtype=float)
-    label = np.loadtxt( "/home/yoshiwo/workspace/res/study/make_synthetic_data/label.txt" , dtype=np.int32)
+    hist = np.loadtxt( "/home/yoshiwo/workspace/study/LDAs/make_synthetic_data/hist.txt" , dtype=float)
+    label = np.loadtxt( "/home/yoshiwo/workspace/study/LDAs/make_synthetic_data/label.txt" , dtype=np.int32)
     """
     データセットの読み込み
     BoFヒストグラムの作成
