@@ -55,10 +55,10 @@ from torch.utils.data import DataLoader
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
     define_topic = 3 # トピックの数を事前に定義
-    hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
-    label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
-    test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
-    test_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt" , dtype=np.int32)
+    hist = np.loadtxt( "../make_synthetic_data/hist.txt" , dtype=float)
+    label = np.loadtxt( "../make_synthetic_data/label.txt" , dtype=np.int32)
+    test_hist = np.loadtxt( "../make_synthetic_data/test_hist.txt" , dtype=float)
+    test_label = np.loadtxt( "../make_synthetic_data/test_label.txt" , dtype=np.int32)
     """
     データセットの読み込み
     BoFヒストグラムの作成
@@ -107,7 +107,8 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         topics=define_topic
     )
     if cuda:
-        autoencoder.cuda()
+        print("cuda is->{}".format(torch.cuda.is_available()))  
+        print(autoencoder.to('cuda'))
     print(autoencoder)
     #import pdb; pdb.set_trace()
     ############################################################################

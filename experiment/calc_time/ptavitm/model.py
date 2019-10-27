@@ -78,7 +78,8 @@ def train(dataset: torch.utils.data.Dataset,
             #print("batch->",batch)
             batch = batch[0]
             if cuda:
-                batch = batch.cuda(non_blocking=True)
+                print("cuda is True")
+                batch = batch.to("cuda",non_blocking=True)
             # run the batch through the autoencoder and obtain the output
             if corruption is not None:
                 recon, mean, logvar, sample_z = autoencoder(F.dropout(batch, corruption))
