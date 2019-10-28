@@ -3,9 +3,10 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-# グラフ用
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+import time
+
 
 def train(dataset: torch.utils.data.Dataset,
           autoencoder: torch.nn.Module,
@@ -62,68 +63,89 @@ def train(dataset: torch.utils.data.Dataset,
     else:
         validation_loader = None
     autoencoder.train()
+    t1 = time.time()
     perplexity_value = -1
     loss_value = 0
     plt_epoch_list = np.arange(epochs)
     plt_loss_list = []
     plt_perplexity = []
-
-    import time
-    t1 = time.time()
     for epoch in range(epochs):
         if scheduler is not None:
             scheduler.step()
-        data_iterator = tqdm(dataloader,leave=True,unit='batch',postfix={'epo': epoch,'lss': '%.6f' % 0.0,'ppx': '%.6f' % -1,},disable=silent)
+        data_iterator = tqdm(
+            dataloader,
+            leave=True,
+            unit='batch',
+            postfix={
+                'epo': epoch,
+                'lss': '%.6f' % 0.0,
+                'ppx': '%.6f' % -1,
+            },
+            disable=silent,
+        )
         losses = []
         for index, batch in enumerate(data_iterator):
-            #print("batch->",batch)
             batch = batch[0]
+
             if cuda:
                 batch = batch.cuda(non_blocking=True)
             # run the batch through the autoencoder and obtain the output
             if corruption is not None:
-                recon, mean, logvar, sample_z = autoencoder(F.dropout(batch, corruption))
+                recon, mean, logvar, z = autoencoder(F.dropout(batch, corruption))
             else:
-                recon, mean, logvar, sample_z = autoencoder(batch)
+                recon, mean, logvar, z = autoencoder(batch)
             # calculate the loss and backprop
             loss = autoencoder.loss(batch, recon, mean, logvar).mean()
-            #print("loss->{}".format(loss.shape))
-            #print("loss->{}".format(loss))
             loss_value = float(loss.mean().item())
             optimizer.zero_grad()
             loss.backward()
             optimizer.step(closure=None)
             # log losses
             losses.append(loss_value)
-            #print(losses)
-            data_iterator.set_postfix(epo=epoch,lss='%.6f' % loss_value,ppx='%.6f' % perplexity_value)
+            data_iterator.set_postfix(
+                epo=epoch,
+                lss='%.6f' % loss_value,
+                ppx='%.6f' % perplexity_value,
+            )
         if update_freq is not None and epoch % update_freq == 0:
             average_loss = (sum(losses) / len(losses)) if len(losses) > 0 else -1
             if validation_loader is not None:
-                # varidation_loder を ds_val にしたとき
-                # test_loss
                 autoencoder.eval()
                 perplexity_value = perplexity(validation_loader, autoencoder, cuda, silent)
-                data_iterator.set_postfix(epo=epoch,lss='%.6f' % average_loss,ppx='%.6f' % perplexity_value)
+                data_iterator.set_postfix(
+                    epo=epoch,
+                    lss='%.6f' % average_loss,
+                    ppx='%.6f' % perplexity_value,
+                )
                 autoencoder.train()
             else:
-                # validation_loader を None にしたとき
-                # train_loss
                 perplexity_value = -1
-                data_iterator.set_postfix(epo=epoch,lss='%.6f' % average_loss,ppx='%.6f' % -1)
+                data_iterator.set_postfix(
+                    epo=epoch,
+                    lss='%.6f' % average_loss,
+                    ppx='%.6f' % -1,
+                )
             if update_callback is not None:
                 update_callback(autoencoder, epoch, optimizer.param_groups[0]['lr'], average_loss, perplexity_value)
         if epoch_callback is not None:
             autoencoder.eval()
             epoch_callback(epoch, autoencoder)
             autoencoder.train()
+        t2 = time.time()
+        # 経過時間を表示
+        elapsed_time = t2-t1
+        print("実行時間",elapsed_time)
         #lossの可視化
-        #plt_loss_list.append(loss_value)
+        #print("loss_value",loss_value)
+        #print("average_loss",average_loss)
         plt_loss_list.append(average_loss)
         plt_perplexity.append(perplexity_value)
     #print("losses->{}".format(len(plt_loss_list)))
     #print("losses->{}".format(plt_loss_list))
-
+    #plt_loss_list = np.array(plt_loss_list)
+    #perplexity_edit = np.exp(plt_loss_list[:] / 277300)
+    #print(perplexity_edit)
+    #print(plt_loss_list)
     fig, (axL, axR) = plt.subplots(ncols=2, figsize=(18,9))
 
     np.save('./runs/loss_list.npy', np.array(plt_loss_list))
@@ -146,14 +168,7 @@ def train(dataset: torch.utils.data.Dataset,
     axR.grid(True)
 
     fig.savefig('lp.png')
-
-    t2 = time.time()
-    # 経過時間を表示
-    elapsed_time = t2-t1
-    print(f"経過時間：{elapsed_time}")
     torch.save(autoencoder.state_dict(), 'deeplda.pth')
-    #torch.save(model.state_dict(), 'vae.pth')
-
 
 def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda: bool = False, silent: bool = False):
     model.eval()
@@ -164,7 +179,7 @@ def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda
         batch = batch[0]
         if cuda:
             batch = batch.cuda(non_blocking=True)
-        recon, mean, logvar, sample_z = model(batch)
+        recon, mean, logvar, z = model(batch)
         losses.append(model.loss(batch, recon, mean, logvar).detach().cpu())
         counts.append(batch.sum(1).detach().cpu())
     return float((torch.cat(losses) / torch.cat(counts)).mean().exp().item())

@@ -6,9 +6,9 @@ import sys
 import click
 
 @click.command()
-@click.option('--topic_n', help = 'トピック数', type=int, default = 3)
+@click.option('--topic_n', help = 'トピック数', type=int, default = 5)
 @click.option('--vacabulary_size', help = '単語数', type=int, default = 30)
-@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 500)
+@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 100)
 @click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 30)
 @click.option('--mode', help = 'zを固定するかどうか(Falseで固定,Trueで固定しない)', type=bool, default = False)
 @click.option('--test', help = 'テスト用のデータ作成(Falseで訓練用,Trueでテスト用)', type=bool, default = False)
@@ -20,6 +20,9 @@ def main(topic_n,
 	mode,
 	test
 	):
+	if test == True:
+	    doc_num = 150
+	    
 	# ハイパーパラメータの定義
 	TOPIC_N = topic_n # トピック数
 	VOCABULARY_SIZE = vacabulary_size # 単語数
@@ -54,14 +57,14 @@ def main(topic_n,
 			beta = [0.1 for i in range(VOCABULARY_SIZE)]
 			#beta[0] = 10
 			topic = np.random.mtrand.dirichlet(beta, size = 1)
-			print("topic->{}".format(topic))
+			#print("topic->{}".format(topic))
 		else:
 			topic = np.random.mtrand.dirichlet(beta, size = 1)
-			print("topic->{}".format(topic))
+			#print("topic->{}".format(topic))
 
 		phi.append(topic)
 
-	print("phi->",phi)
+	#print("phi->",phi)
 	# 各ファイル変数
 	output_f = open(FILE_NAME+'.doc','w')
 	z_f = open(FILE_NAME+'.z_feature','w')
@@ -91,6 +94,7 @@ def main(topic_n,
 	remove_label = [] # 潜在ラベルの重複インデックスを格納
 	# 各ドキュメントの単語を生成
 	for i in range(DOC_NUM):
+		print("epochs->{}".format(i))
 		buffer = {}
 		z_buffer = {} # 真のzをトラッキングするための変数
 		theta = np.zeros((1,TOPIC_N), dtype = float)
@@ -132,9 +136,9 @@ def main(topic_n,
 		#print("z_assignment->", z_assignment)
 		#print("z_buffer->", z_buffer)
 		#print("----------------------")
-		print("w->", w)
-		print("w_assignment->", w_assignment)
-		print("buffer->", buffer)
+		#print("w->", w)
+		#print("w_assignment->", w_assignment)
+		#print("buffer->", buffer)
 
 		"""
 		ここまで人口データ作成

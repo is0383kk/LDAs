@@ -15,7 +15,7 @@ __alpha = 0.9
 __beta = 0.01
 
 
-root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt"
+root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt"
 
 
 def calc_lda_param( docs_dn, topics_dn, K, V ):
@@ -141,6 +141,8 @@ def lda( data , K , epoch =100, save_dir="model", load_dir=None):
     # 単語の種類数
     V = len(data[0])    # 語彙数(語彙の総数)
     D = len(data)       # 文書数
+    num_p = sum(data[0])*D
+    #print("N->",N)
     #print("語彙数: " + str(V) + ",文書数: " + str(D))
 
     # data内の単語を一列に並べる　（計算しやすくするため）
@@ -211,23 +213,24 @@ def lda( data , K , epoch =100, save_dir="model", load_dir=None):
         #print ("分類結果" + str(doc_dopics))
         #print("---------------------")
         #print("n_dz->",n_dz)
-        """
+        
         # グラフ表示
         plt.clf()
+        #plt.subplot("121")
+        #plt.title( "P(z|d)" )
+        #plt.imshow( n_dz / np.tile(np.sum(n_dz,1).reshape(D,1),(1,K)) , interpolation="none" )
         plt.subplot("121")
-        plt.title( "P(z|d)" )
-        plt.imshow( n_dz / np.tile(np.sum(n_dz,1).reshape(D,1),(1,K)) , interpolation="none" )
-        plt.subplot("122")
         plt.title( "liklihood" )
         plt.plot( range(len(liks)) , liks )
         plt.draw()
         plt.pause(0.1)
-        """
+        
     t2 = time.time()
     # 経過時間を表示
     elapsed_time = t2-t1
     file_name = "./time.txt"
-
+    np_liks = np.array(liks)
+    print(np_liks)
     try:
         file = open(file_name, 'a')
         file.write(str(elapsed_time)+"\n")
@@ -236,9 +239,34 @@ def lda( data , K , epoch =100, save_dir="model", load_dir=None):
     finally:
         file.close()
     print(f"経過時間：{elapsed_time}")
+    perplexity = np.exp(-np_liks[:] / num_p)
+    print(perplexity)
+    
+    plt_epoch_list = np.arange(epoch_num)
+    fig, (axL, axR) = plt.subplots(ncols=2, figsize=(18,9))
 
+    np.save('./loss_list.npy', np_liks)
+    np.save('./perplexity.npy', perplexity)
+    plt_loss_list = np.load('./loss_list.npy')
+    plt_perplexity = np.load('./perplexity.npy')
+
+    axL.plot(plt_epoch_list,plt_loss_list)
+    axL.set_title('loss',fontsize=23)
+    axL.set_xlabel('epoch',fontsize=23)
+    axL.set_ylabel('loss',fontsize=23)
+    axL.tick_params(labelsize=18)
+    axL.grid(True)
+
+    axR.plot(plt_epoch_list,plt_perplexity)
+    axR.set_title('perplexity',fontsize=23)
+    axR.set_xlabel('epoch',fontsize=23)
+    axR.set_ylabel('perplexity',fontsize=23)
+    axR.tick_params(labelsize=18)
+    axR.grid(True)
+
+    fig.savefig('lda_lp.png')
     #plt.savefig('result.png')
-    save_model(save_dir, n_dz, n_zv, n_z )
+    #save_model(save_dir, n_dz, n_zv, n_z )
     #plt.ioff()
     #plt.show()
     #print(docs_dn[3])
@@ -250,9 +278,9 @@ def main():
     #data = np.loadtxt( root , dtype=np.int32)*n # 発生回数にnをかけて水増し可能
     data = np.loadtxt( root , dtype=np.int32)
     #print(data)
-    for i in range(30):
-        #lda( data , topic, 100, "learn_result" )
-        lda( data, topic,  1, "recog_result" , "learn_result" )
+    #for i in range(30):
+    #lda( data , topic, 100, "learn_result" )
+    lda( data, topic,  20, "recog_result" , "learn_result" )
 
 if __name__ == '__main__':
     main()

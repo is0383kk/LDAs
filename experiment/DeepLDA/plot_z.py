@@ -11,7 +11,7 @@ from ptavitm.vae import ProdLDA
 from torch.utils.data import DataLoader
 
 
-define_topic = 3 # トピックの数を事前に定義
+define_topic = 5 # トピックの数を事前に定義
 hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
 label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
 test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)

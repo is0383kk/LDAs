@@ -36,7 +36,7 @@ from torch.utils.data import DataLoader
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=3000
+    default=100
 )
 @click.option(
     '--top-words',
@@ -51,7 +51,7 @@ from torch.utils.data import DataLoader
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 3 # トピックの数を事前に定義
+    define_topic = 5 # トピックの数を事前に定義
     hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
     label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
     test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
@@ -119,7 +119,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         ds_train,
         autoencoder,
         cuda=cuda,
-        validation=None,
+        validation=ds_val,
         epochs=epochs,
         batch_size=batch_size,
         optimizer=ae_optimizer,
