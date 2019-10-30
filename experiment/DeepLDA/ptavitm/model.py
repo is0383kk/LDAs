@@ -86,7 +86,6 @@ def train(dataset: torch.utils.data.Dataset,
         losses = []
         for index, batch in enumerate(data_iterator):
             batch = batch[0]
-
             if cuda:
                 batch = batch.cuda(non_blocking=True)
             # run the batch through the autoencoder and obtain the output
@@ -109,6 +108,8 @@ def train(dataset: torch.utils.data.Dataset,
             )
         if update_freq is not None and epoch % update_freq == 0:
             average_loss = (sum(losses) / len(losses)) if len(losses) > 0 else -1
+            #print("sum(losses)->",sum(losses))
+            #print("len(losses)->",len(losses))
             if validation_loader is not None:
                 autoencoder.eval()
                 perplexity_value = perplexity(validation_loader, autoencoder, cuda, silent)
@@ -160,6 +161,7 @@ def train(dataset: torch.utils.data.Dataset,
     axL.tick_params(labelsize=18)
     axL.grid(True)
 
+
     axR.plot(plt_epoch_list,plt_perplexity)
     axR.set_title('perplexity',fontsize=23)
     axR.set_xlabel('epoch',fontsize=23)
@@ -182,8 +184,31 @@ def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda
         recon, mean, logvar, z = model(batch)
         losses.append(model.loss(batch, recon, mean, logvar).detach().cpu())
         counts.append(batch.sum(1).detach().cpu())
+        #print("torch.cat(counts)",torch.cat(counts))
+        #print("torch.cat(losses)",torch.cat(losses))
+        #print("losses",len(losses))
+        #print("(torch.cat(losses) / torch.cat(counts)).mean()",(torch.cat(losses) / torch.cat(counts)).mean())
     return float((torch.cat(losses) / torch.cat(counts)).mean().exp().item())
 
+def compute_perplexity(model, dataloader):
+
+    model.eval()
+    loss = 0
+
+    with torch.no_grad():
+        for i, data_bow in enumerate(dataloader):
+            data_bow = data_bow.to(device)
+            data_bow_norm = F.normalize(data_bow)
+
+            z, g, recon_batch, mu, logvar = model(data_bow_norm)
+
+            #loss += loss_function(recon_batch, data_bow, mu, logvar).detach()
+            loss += F.binary_cross_entropy(recon_batch, data_bow, size_average=False)
+
+    loss = loss / dataloader.word_count
+    perplexity = np.exp(loss.cpu().numpy())
+
+    return perplexity
 
 def predict(dataset: torch.utils.data.Dataset,
             model: torch.nn.Module,

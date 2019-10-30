@@ -141,8 +141,8 @@ def lda( data , label, K , epoch =100, save_dir="model", load_dir=None):
     #print(V)
     #print(D)
     num_p = sum(data[0])*D # perplexityの分母
-    #print("num_p->",num_p)
-    #print("語彙数: " + str(V) + ",文書数: " + str(D))
+    print("num_p->",num_p)
+    print("語彙数: " + str(V) + ",文書数: " + str(D))
 
     # data内の単語を一列に並べる　（計算しやすくするため）
     docs_dn = [ None for i in range(D) ]
@@ -293,8 +293,8 @@ def lda( data , label, K , epoch =100, save_dir="model", load_dir=None):
     #print(topics_dn[3])
 
 def main():
-    topic = 5 # トピック数を指定
-    test = True
+    topic = 10 # トピック数を指定
+    test = False
     if test == False:
         root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt"
         label_data = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt"

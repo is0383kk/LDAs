@@ -28,15 +28,15 @@ from torch.utils.data import DataLoader
 )
 @click.option(
     '--batch-size',
-    help='バッチサイズ (default 200).',
+    help='バッチサイズ(文書数/batch_size = 1エポックの学習データ数).',
     type=int,
-    default=16
+    default=20
 )
 @click.option(
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=100
+    default=30
 )
 @click.option(
     '--top-words',
