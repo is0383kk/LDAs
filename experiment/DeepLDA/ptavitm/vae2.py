@@ -45,7 +45,6 @@ def encoder(in_dimension: int,
     return nn.Sequential(OrderedDict([
         ('linear1', nn.Linear(in_dimension, hidden1_dimension)),
         ('act1', nn.Softplus()),
-        ('act2', nn.Softplus()),
         ('dropout', nn.Dropout(encoder_noise))
     ]))
 

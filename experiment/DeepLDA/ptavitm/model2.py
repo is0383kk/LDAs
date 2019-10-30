@@ -110,7 +110,7 @@ def train(dataset: torch.utils.data.Dataset,
             epoch_callback(epoch, autoencoder)
             autoencoder.train()
         #lossの可視化
-        plt_loss_list.append(loss_value)
+        plt_loss_list.append(average_loss)
         plt_perplexity.append(perplexity_value)
         #print(plt_perplexity)
     #print("losses->{}".format(len(plt_loss_list)))

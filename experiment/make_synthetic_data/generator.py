@@ -6,10 +6,10 @@ import sys
 import click
 
 @click.command()
-@click.option('--topic_n', help = 'トピック数', type=int, default = 5)
-@click.option('--vacabulary_size', help = '単語数', type=int, default = 30)
-@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 100)
-@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 30)
+@click.option('--topic_n', help = 'トピック数', type=int, default = 10)
+@click.option('--vacabulary_size', help = '単語数', type=int, default = 5)
+@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 3000)
+@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 50)
 @click.option('--mode', help = 'zを固定するかどうか(Falseで固定,Trueで固定しない)', type=bool, default = False)
 @click.option('--test', help = 'テスト用のデータ作成(Falseで訓練用,Trueでテスト用)', type=bool, default = False)
 
@@ -21,7 +21,7 @@ def main(topic_n,
 	test
 	):
 	if test == True:
-	    doc_num = 150
+	    doc_num = 1000
 	    
 	# ハイパーパラメータの定義
 	TOPIC_N = topic_n # トピック数

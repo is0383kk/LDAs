@@ -9,9 +9,10 @@ from torch.utils.data import TensorDataset
 from ptavitm.vae import ProdLDA
 # データローダ
 from torch.utils.data import DataLoader
+import time
 
 
-define_topic = 5 # トピックの数を事前に定義
+define_topic = 10 # トピックの数を事前に定義
 hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
 label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
 test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
@@ -116,7 +117,21 @@ for x,t in enumerate(testloader):
     t[0]:文書
     t[1]:人口データを元に付けた文書ラベル
     """
+    t1 = time.time()
     recon, mean, logvar, z = autoencoder(t[0]) # 訓練後の潜在変数の抽出
+    t2 = time.time()
+    # 経過時間を表示
+    elapsed_time = t2-t1
+    print("実行時間",elapsed_time)
+    file_name = "./5k_time.txt"
+
+    try:
+        file = open(file_name, 'a')
+        file.write(str(elapsed_time)+"\n")
+    except Exception as e:
+        print(e)
+    finally:
+        file.close()
 
     z = z.cpu()
     z_label = t[1].cpu()

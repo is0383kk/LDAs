@@ -10,8 +10,8 @@ from sklearn.metrics.cluster import adjusted_rand_score
 
 
 #ハイパーパラメータ
-__alpha = 0.9
-__beta = 0.01
+__alpha = 1.0
+__beta = 0.3
 
 
 
@@ -228,7 +228,7 @@ def lda( data , label, K , epoch =100, save_dir="model", load_dir=None):
     t2 = time.time()
     # 経過時間を表示
     elapsed_time = t2-t1
-    file_name = "./time.txt"
+    file_name = "./10k_time.txt"
     np_liks = np.array(liks)
     #print(np_liks)
     try:
@@ -246,9 +246,19 @@ def lda( data , label, K , epoch =100, save_dir="model", load_dir=None):
     print("test_label",label)
     print("ARI=>",ari)
     if load_dir:
+        file_name = "./5k_ari_simple.txt"
         perplexity = np.exp(-np_liks[:] / num_p)
+        try:
+            file = open(file_name, 'a')
+            file.write(str(ari)+"\n")
+        except Exception as e:
+            print(e)
+        finally:
+            file.close()
     else:
         perplexity = np.full(len(liks), -1)
+    
+    
     
     plt_epoch_list = np.arange(epoch_num)
     fig, (axL, axR) = plt.subplots(ncols=2, figsize=(18,9))
@@ -271,8 +281,9 @@ def lda( data , label, K , epoch =100, save_dir="model", load_dir=None):
     axR.set_ylabel('perplexity',fontsize=23)
     axR.tick_params(labelsize=18)
     axR.grid(True)
-
+    
     fig.savefig('lda_lp.png')
+    
     #plt.savefig('result.png')
     if load_dir is None:
         save_model(save_dir, n_dz, n_zv, n_z )
@@ -282,29 +293,28 @@ def lda( data , label, K , epoch =100, save_dir="model", load_dir=None):
     #print(topics_dn[3])
 
 def main():
+    topic = 5 # トピック数を指定
     test = True
     if test == False:
         root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt"
         label_data = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt"
         #n = 10 # データの水増し用の変数
-        topic = 5 # トピック数を指定
         #data = np.loadtxt( root , dtype=np.int32)*n # 発生回数にnをかけて水増し可能
         data = np.loadtxt( root , dtype=np.int32)
         label = np.loadtxt( label_data , dtype=np.int32)
         #print(data)
         #for i in range(30):
-        lda( data , label, topic, 100, "learn_result" )
+        lda( data , label, topic, 200, "learn_result" )
     else:
-        root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt"
-        label_data = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt"
+        root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt"
+        label_data = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt"
         #n = 10 # データの水増し用の変数
-        topic = 5 # トピック数を指定
         #data = np.loadtxt( root , dtype=np.int32)*n # 発生回数にnをかけて水増し可能
         data = np.loadtxt( root , dtype=np.int32)
         label = np.loadtxt( label_data , dtype=np.int32)
         #print(data)
         #for i in range(30):
-        lda( data, label, topic,  200, "recog_result" , "learn_result" )
+        lda( data, label, topic,  100, "recog_result" , "learn_result" )
 
 if __name__ == '__main__':
     main()
