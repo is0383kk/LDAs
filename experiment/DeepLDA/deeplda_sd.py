@@ -28,15 +28,15 @@ from torch.utils.data import DataLoader
 )
 @click.option(
     '--batch-size',
-    help='バッチサイズ(文書数/batch_size = 1エポックの学習データ数).',
+    help='バッチサイズ(文書数/batch_size ).',
     type=int,
-    default=20
+    default=100
 )
 @click.option(
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=30
+    default=100
 )
 @click.option(
     '--top-words',
@@ -51,7 +51,7 @@ from torch.utils.data import DataLoader
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 10 # トピックの数を事前に定義
+    define_topic = 5 # トピックの数を事前に定義
     hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
     label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
     test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
@@ -62,7 +62,8 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     BoFヒストグラムの作成
     """
     #print("作成したヒストグラム->\n"+str(hist))
-    #print("hist.shape->{}".format(hist.shape))
+    print("hist.shape->{}".format(hist.shape))
+    print("全単語数{}".format(hist.shape[0]*hist.shape[1]))
     #print("len(hist)->",len(hist[0]))
     vocab = {}
     for i in range(len(hist[0])):

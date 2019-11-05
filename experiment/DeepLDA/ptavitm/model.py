@@ -144,7 +144,7 @@ def train(dataset: torch.utils.data.Dataset,
     #print("losses->{}".format(len(plt_loss_list)))
     #print("losses->{}".format(plt_loss_list))
     #plt_loss_list = np.array(plt_loss_list)
-    #perplexity_edit = np.exp(plt_loss_list[:] / 277300)
+    #perplexity_edit = np.exp(plt_loss_list[:] / 60)
     #print(perplexity_edit)
     #print(plt_loss_list)
     fig, (axL, axR) = plt.subplots(ncols=2, figsize=(18,9))
@@ -185,9 +185,12 @@ def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda
         losses.append(model.loss(batch, recon, mean, logvar).detach().cpu())
         counts.append(batch.sum(1).detach().cpu())
         #print("torch.cat(counts)",torch.cat(counts))
+        #print("len(counts)",len(counts))
         #print("torch.cat(losses)",torch.cat(losses))
         #print("losses",len(losses))
+        #print("losses",losses)
         #print("(torch.cat(losses) / torch.cat(counts)).mean()",(torch.cat(losses) / torch.cat(counts)).mean())
+        #print("(torch.cat(losses) / torch.cat(counts)).mean()",(torch.cat(losses) / torch.cat(counts)).mean().exp().item())
     return float((torch.cat(losses) / torch.cat(counts)).mean().exp().item())
 
 def compute_perplexity(model, dataloader):

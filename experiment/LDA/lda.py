@@ -294,7 +294,7 @@ def lda( data , label, K , epoch =100, save_dir="model", load_dir=None):
 
 def main():
     topic = 10 # トピック数を指定
-    test = False
+    test = True
     if test == False:
         root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt"
         label_data = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt"
@@ -304,7 +304,7 @@ def main():
         label = np.loadtxt( label_data , dtype=np.int32)
         #print(data)
         #for i in range(30):
-        lda( data , label, topic, 200, "learn_result" )
+        lda( data , label, topic, 50, "learn_result" )
     else:
         root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt"
         label_data = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt"
@@ -314,7 +314,7 @@ def main():
         label = np.loadtxt( label_data , dtype=np.int32)
         #print(data)
         #for i in range(30):
-        lda( data, label, topic,  100, "recog_result" , "learn_result" )
+        lda( data, label, topic,  50, "recog_result" , "learn_result" )
 
 if __name__ == '__main__':
     main()
