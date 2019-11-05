@@ -14,6 +14,7 @@ from ptavitm.model import train
 from ptavitm.vae import ProdLDA
 # データローダ
 from torch.utils.data import DataLoader
+from ptavitm.utils import CountTensorDataset
 
 
 """
@@ -30,7 +31,7 @@ from torch.utils.data import DataLoader
     '--batch-size',
     help='バッチサイズ(文書数/batch_size ).',
     type=int,
-    default=100
+    default=32
 )
 @click.option(
     '--epochs',
@@ -51,7 +52,7 @@ from torch.utils.data import DataLoader
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 5 # トピックの数を事前に定義
+    define_topic = 10 # トピックの数を事前に定義
     hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
     label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
     test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
@@ -98,8 +99,14 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
 
 
     #################################################################################
-    ds_train = TensorDataset(torch.from_numpy(hist).float(),torch.from_numpy(label).int())
-    ds_val = TensorDataset(torch.from_numpy(test_hist).float(),torch.from_numpy(test_label).int())
+    tensor_tr = torch.from_numpy(hist).float()
+    tensor_te = torch.from_numpy(test_hist).float()
+    print(f"tensor_te->{tensor_te.sum(1)}")
+
+    ds_train = TensorDataset(torch.from_numpy(hist).float())
+    ds_val = TensorDataset(torch.from_numpy(test_hist).float())
+
+
     autoencoder = ProdLDA(
         in_dimension=len(hist[0]),# 入力,本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
         hidden1_dimension=100, # 中間層

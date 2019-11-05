@@ -9,19 +9,43 @@ def normalized_random_array(d0, d1):
     return normalize(ndarray, axis = 1)
 
 if __name__ == "__main__":
+
     # 各パラメータの初期化
-    W = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=int)
-    K = 5
-    D = W.shape[0]
-    PER_V = W.shape[1]
-    N = np.full(D, PER_V)
-    V = 50
-    # 予測パラメータの初期化
+    D = 10 # 文書数
+    K = 3 # トピック数
+    V = 100 # 単語数
+
+    theta = normalized_random_array(D, K)
+    phi = normalized_random_array(K, V)
     theta_est = normalized_random_array(D, K)
     phi_est = normalized_random_array(K, V)
 
-    #print(f"W : {W}")
-    #print(f"W : {W.shape[1]}")
+    # 文書生成のためのパラメータ
+    _theta = np.array([theta[:, :k+1].sum(axis = 1) for k in range(K)]).T
+    _phi = np.array([phi[:, :v+1].sum(axis = 1) for v in range(V)]).T
+
+
+    # 文書の生成
+    W, Z = [], []
+    #N = np.random.randint(1, 10, D) # 各文書の単語数
+    PER_V = 150
+    N = np.full(D, PER_V)
+    """
+    N: [2,3,4]
+    W: [array([])]
+    """
+    print(f"N : {N}")
+    print(f"N.shape : {N.shape}")
+    print(f"np.max(N) : {np.max(N)}")
+    for (d, N_d) in enumerate(N):
+        Z.append((np.random.rand(N_d, 1) < _theta[d, :]).argmax(axis = 1))
+        W.append((np.random.rand(N_d, 1) < _phi[Z[-1], :]).argmax(axis = 1))
+
+
+
+    W = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
+    print(f"W : {W}")
+    print(f"W : {W.shape[1]}")
 
     # estimate parameters
     q = np.zeros((D, np.max(N), K))
