@@ -206,7 +206,7 @@ def lda( data , K ):
 def main():
     t1 = time.time() # 処理前の時刻
     n = 100 # データの水増し用の変数
-    topic = 2 # トピック数を指定
+    topic = 20 # トピック数を指定
     #data = np.loadtxt( root , dtype=np.int32)*n # 発生回数にnをかけて水増し可能
     data = np.loadtxt( root , dtype=np.int32)
     #print(data)

@@ -41,9 +41,6 @@ if __name__ == "__main__":
         Z.append((np.random.rand(N_d, 1) < _theta[d, :]).argmax(axis = 1))
         W.append((np.random.rand(N_d, 1) < _phi[Z[-1], :]).argmax(axis = 1))
 
-
-
-    W = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
     print(f"W : {W}")
     print(f"W : {W.shape[1]}")
 

@@ -11,10 +11,16 @@ from tensorboardX import SummaryWriter
 import pickle
 # DeepLDA用の訓練用関数とvaeモデル
 from ptavitm.model import train
-from ptavitm.vae import ProdLDA
+#from ptavitm.vae import ProdLDA
+from ptavitm.vae_tanh import ProdLDA
 # データローダ
 from torch.utils.data import DataLoader
 from ptavitm.utils import CountTensorDataset
+import math
+# Coherenceモデル
+from gensim.corpora.dictionary import Dictionary
+from gensim.models.coherencemodel import CoherenceModel
+from gensim.matutils import Sparse2Corpus
 
 
 """
@@ -31,7 +37,7 @@ from ptavitm.utils import CountTensorDataset
     '--batch-size',
     help='バッチサイズ(文書数/batch_size ).',
     type=int,
-    default=32
+    default=64
 )
 @click.option(
     '--epochs',
@@ -43,7 +49,7 @@ from ptavitm.utils import CountTensorDataset
     '--top-words',
     help='各トピックにおいて表示するトップ単語の数 (default 12).',
     type=int,
-    default=5
+    default=12
 )
 @click.option(
     '--testing-mode',
@@ -52,7 +58,7 @@ from ptavitm.utils import CountTensorDataset
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 10 # トピックの数を事前に定義
+    define_topic = 30 # トピックの数を事前に定義
     hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
     label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
     test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
@@ -98,10 +104,9 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         ]
 
 
+
     #################################################################################
-    tensor_tr = torch.from_numpy(hist).float()
-    tensor_te = torch.from_numpy(test_hist).float()
-    print(f"tensor_te->{tensor_te.sum(1)}")
+
 
     ds_train = TensorDataset(torch.from_numpy(hist).float())
     ds_val = TensorDataset(torch.from_numpy(test_hist).float())
@@ -140,7 +145,6 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         [reverse_vocab[item.item()] for item in topic]
         for topic in decoder_weight.topk(top_words, dim=0)[1].t()
     ]
-
     """
     各トピックの単語をテキストファイルに保存
     """
@@ -158,6 +162,28 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
             tag='feature_embeddings',
         )
     writer.close()
+
+    """
+    Perplexityの計算
+    学習後のパラメータを用いてデータセット全てに対してPerplexityの計算を行う
+    """
+    dataloader = DataLoader(
+        ds_val,
+        batch_size=test_hist.shape[0],
+        )
+    losses = []
+    counts = []
+    for index, batch in enumerate(dataloader):
+        batch = batch[0]
+        print(f"batch->{batch}")
+        recon, mean, logvar, z = autoencoder(batch)
+        losses.append(autoencoder.loss(batch, recon, mean, logvar).detach().cpu())
+        counts.append(batch.sum(1).detach().cpu())
+    #print(f"losses->{losses}\ncounts->{counts}")
+    losses = losses[0].clone()
+    counts = counts[0].clone()
+    avg = (losses / counts).mean()
+    print('The approximated perplexity is: ', math.exp(avg))
 
 
 if __name__ == '__main__':

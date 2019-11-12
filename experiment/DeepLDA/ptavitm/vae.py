@@ -14,7 +14,7 @@ def prior(topics: int) -> Tuple[torch.Tensor, torch.Tensor]:
     :return: mean and variance tensors
     """
     # ラプラス近似で正規分布に近似
-    a = torch.Tensor(1, topics).float().fill_(0.995) # 1 x 50 全て1.0
+    a = torch.Tensor(1, topics).float().fill_(0.9) # 1 x 50 全て1.0
     mean = a.log().t() - a.log().mean(1)
     # a.log().t()->(1 x 50 全て0.0)
     # a.log().mean

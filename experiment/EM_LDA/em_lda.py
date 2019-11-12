@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
 
 def normalize(ndarray, axis):
     return ndarray / ndarray.sum(axis = axis, keepdims = True)
@@ -10,8 +11,11 @@ def normalized_random_array(d0, d1):
 
 if __name__ == "__main__":
     # 各パラメータの初期化
-    W = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=int)
-    K = 5
+    W = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=int)
+    hist = torch.from_numpy(W).float()
+    word_sum = int(sum(hist.sum(1)))
+    print(f"word_sum=>{word_sum}")
+    K = 20
     D = W.shape[0]
     PER_V = W.shape[1]
     N = np.full(D, PER_V)
@@ -52,8 +56,8 @@ if __name__ == "__main__":
             likelihood[t] += np.log(theta_est[d, :].dot(phi_est[:, W_d])).sum()
 
     # perplexity
-    perplexity = np.exp(-likelihood[:] / N.sum())
-
+    perplexity = np.exp(-likelihood[:] / word_sum ) 
+    print(f"Perplexity->{np.exp(-likelihood[-1] / word_sum)}")
     # グラフの保存
     fig, (axL, axR) = plt.subplots(ncols=2, figsize=(18,9))
 

@@ -6,13 +6,14 @@ import numpy as np
 
 import torch
 from torch.utils.data import TensorDataset
-from ptavitm.vae import ProdLDA
+#from ptavitm.vae import ProdLDA
+from ptavitm.vae_tanh import ProdLDA
 # データローダ
 from torch.utils.data import DataLoader
 import time
 
 
-define_topic = 10 # トピックの数を事前に定義
+define_topic = 30 # トピックの数を事前に定義
 hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
 label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
 test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
@@ -41,7 +42,7 @@ ds_val = TensorDataset(torch.from_numpy(test_hist).float(),torch.from_numpy(test
 
 print("autoencoder->{}".format(autoencoder))
 
-test_batch = 150
+test_batch = 1000
 trainloader = DataLoader(
     ds_train,
     batch_size=test_batch,
@@ -69,6 +70,10 @@ elif define_topic == 5:
     colors = ["red", "green", "blue", "orange", "purple"]
 elif define_topic == 10:
     colors = ["red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf']
+elif define_topic == 20:
+    colors = ["#000000", "#808080", "#b0c4de", "#4169e1", "#0000ff", "#00ffff", "#006400", "#8fbc8f", '#00ff7f', '#32cd32',"#556b2f", "#eee8aa", "#ffff00", "#ffa500", "#f4a460", "#8b0000", "#ff00ff", "#ff7f50", '#ff0000', '#f781bf']
+elif define_topic == 30:
+    colors = ["#000000", "#808080", "#b0c4de", "#4169e1", "#0000ff", "#00ffff", "#006400", "#8fbc8f", '#00ff7f', '#32cd32',"#556b2f", "#eee8aa", "#ffff00", "#ffa500", "#f4a460", "#8b0000", "#ff00ff", "#ff7f50", '#ff0000', '#f781bf',"#7b68ee", "#dda0dd", "#fffff0", "#d2b48c", "#4b0082", "#5f9ea0", "#00fa9a", "#2f4f4f", '#dcdcdc', '#191970']
 
 def visualize_zs_train(zs, labels):
     #plt.figure(figsize=(10,10))
