@@ -11,9 +11,12 @@ from ptavitm.vae_tanh import ProdLDA
 # データローダ
 from torch.utils.data import DataLoader
 import time
+# クラス推定
+import torch.nn as nn
+import torch.nn.functional as F
+from sklearn.metrics.cluster import adjusted_rand_score
 
-
-define_topic = 30 # トピックの数を事前に定義
+define_topic = 5 # トピックの数を事前に定義
 hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
 label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
 test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
@@ -25,7 +28,8 @@ autoencoder = ProdLDA(
     hidden2_dimension=100,
     topics=define_topic
 )
-autoencoder.load_state_dict(torch.load('./deeplda.pth'))
+autoencoder.load_state_dict(torch.load('./sm_deeplda.pth'))
+#autoencoder.load_state_dict(torch.load('./deeplda.pth'))
 
 """
 vocab
@@ -42,10 +46,12 @@ ds_val = TensorDataset(torch.from_numpy(test_hist).float(),torch.from_numpy(test
 
 print("autoencoder->{}".format(autoencoder))
 
+train_batch = 1000
 test_batch = 1000
+
 trainloader = DataLoader(
     ds_train,
-    batch_size=test_batch,
+    batch_size=train_batch,
 )
 
 testloader = DataLoader(
@@ -73,7 +79,7 @@ elif define_topic == 10:
 elif define_topic == 20:
     colors = ["#000000", "#808080", "#b0c4de", "#4169e1", "#0000ff", "#00ffff", "#006400", "#8fbc8f", '#00ff7f', '#32cd32',"#556b2f", "#eee8aa", "#ffff00", "#ffa500", "#f4a460", "#8b0000", "#ff00ff", "#ff7f50", '#ff0000', '#f781bf']
 elif define_topic == 30:
-    colors = ["#000000", "#808080", "#b0c4de", "#4169e1", "#0000ff", "#00ffff", "#006400", "#8fbc8f", '#00ff7f', '#32cd32',"#556b2f", "#eee8aa", "#ffff00", "#ffa500", "#f4a460", "#8b0000", "#ff00ff", "#ff7f50", '#ff0000', '#f781bf',"#7b68ee", "#dda0dd", "#fffff0", "#d2b48c", "#4b0082", "#5f9ea0", "#00fa9a", "#2f4f4f", '#dcdcdc', '#191970']
+    colors = ["red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf',"red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf',"red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf']
 
 def visualize_zs_train(zs, labels):
     #plt.figure(figsize=(10,10))
@@ -81,11 +87,11 @@ def visualize_zs_train(zs, labels):
     #ax = Axes3D(fig)
     points = TSNE(n_components=2, random_state=0).fit_transform(zs)
     for p, l in zip(points, labels):
-        plt.title("Latent space (Topic:"+str(define_topic)+", Doc:"+str(test_batch)+", Words:"+str(hist.shape[1])+")", fontsize=24)
+        plt.title("Latent space (Topic:"+str(define_topic)+", Doc:"+str(train_batch)+", Words:"+str(hist.shape[1])+")", fontsize=24)
         plt.xlabel("Latent space:xlabel", fontsize=21)
         plt.ylabel("Latent space:ylabel", fontsize=21)
         plt.tick_params(labelsize=17)
-        plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=60)
+        plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
         #ax.scatter(p[0], p[1], p[2], marker="${}$".format(l),c=colors[l])
     plt.savefig('./sample_z/'+'TRAIN'+'k'+str(define_topic)+'v'+str(hist.shape[1])+'d'+str(hist.shape[0])+'.png')
 
@@ -99,22 +105,22 @@ def visualize_zs_test(zs, labels):
         plt.xlabel("Latent space:xlabel", fontsize=21)
         plt.ylabel("Latent space:ylabel", fontsize=21)
         plt.tick_params(labelsize=17)
-        plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=60)
+        plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
         #ax.scatter(p[0], p[1], p[2], marker="${}$".format(l),c=colors[l])
     plt.savefig('./sample_z/'+'TEST'+'k'+str(define_topic)+'v'+str(test_hist.shape[1])+'d'+str(test_batch)+'.png')
 
 for x,t in enumerate(trainloader):
-    """
-    x:インデックス（使わない）
-    t[0]:文書
-    t[1]:人口データを元に付けた文書ラベル
-    """
     recon, mean, logvar, z = autoencoder(t[0]) # 訓練後の潜在変数の抽出
-
-    z = z.cpu()
-    z_label = t[1].cpu()
-    visualize_zs_train(z.detach().numpy(), z_label.cpu().detach().numpy())
+    train_z = z.cpu()
+    train_label = t[1].cpu()
+    predict_train_label = z.argmax(1).numpy()
+    print(f"predict_train_label->{predict_train_label}")
+    train_ari = adjusted_rand_score(train_label,predict_train_label)
+    print(f"TRAIN:ARI->{train_ari}")
+    #visualize_zs_train(train_z.detach().numpy(), predict_train_label)
+    visualize_zs_train(train_z.detach().numpy(), train_label.detach().numpy())
     break
+
 
 for x,t in enumerate(testloader):
     """
@@ -124,6 +130,12 @@ for x,t in enumerate(testloader):
     """
     t1 = time.time()
     recon, mean, logvar, z = autoencoder(t[0]) # 訓練後の潜在変数の抽出
+    test_z = z.cpu()
+    test_label = t[1].cpu()
+    print(f"test_z->{test_z}")
+    predict_test_label = z.argmax(1).numpy()
+    test_ari = adjusted_rand_score(test_label,predict_test_label)
+    print(f"TEST:ARI->{test_ari}")
     t2 = time.time()
     # 経過時間を表示
     elapsed_time = t2-t1
@@ -138,10 +150,9 @@ for x,t in enumerate(testloader):
     finally:
         file.close()
 
-    z = z.cpu()
-    z_label = t[1].cpu()
     """
     潜在変数zの確認
     """
-    visualize_zs_test(z.detach().numpy(), z_label.cpu().detach().numpy())
+    #visualize_zs_test(test_z.detach().numpy(), predict_test_label)
+    visualize_zs_train(test_z.detach().numpy(), test_label.detach().numpy())
     break

@@ -170,7 +170,7 @@ def train(dataset: torch.utils.data.Dataset,
     axR.grid(True)
 
     fig.savefig('lp.png')
-    torch.save(autoencoder.state_dict(), 'deeplda.pth')
+    torch.save(autoencoder.state_dict(), 'sm_deeplda.pth')
 
 def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda: bool = False, silent: bool = False):
     model.eval()

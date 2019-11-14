@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 import torch
 import torch.nn as nn
-
+import torch.nn.functional as F
 from typing import Mapping, Optional, Tuple
 
 
@@ -134,6 +134,8 @@ class ProdLDA(nn.Module):
         """
         eps = mean.new().resize_as_(mean).normal_(mean=0, std=1)
         z = mean + logvar.exp().sqrt() * eps
+        z = F.softmax(z,dim=1)
+        #print(f"z.softmax->{z}")
         #print("z.shape->"+str(z.shape))
         #print("len(z)->",str(len(z)))
         #print("z->"+str(z))
@@ -141,7 +143,8 @@ class ProdLDA(nn.Module):
 
     def sample_z(self,mean,logvar): # 独自で定義,潜在変数の可視化に必要
         eps = mean.new().resize_as_(mean).normal_(mean=0, std=1)
-        return mean + logvar.exp().sqrt() * eps
+        z = mean + logvar.exp().sqrt() * eps
+        return z
 
     def forward(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         _, mean, logvar = self.encode(batch)

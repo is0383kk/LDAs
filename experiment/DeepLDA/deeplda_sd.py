@@ -37,7 +37,7 @@ from gensim.matutils import Sparse2Corpus
     '--batch-size',
     help='バッチサイズ(文書数/batch_size ).',
     type=int,
-    default=64
+    default=16
 )
 @click.option(
     '--epochs',
@@ -49,7 +49,7 @@ from gensim.matutils import Sparse2Corpus
     '--top-words',
     help='各トピックにおいて表示するトップ単語の数 (default 12).',
     type=int,
-    default=12
+    default=32
 )
 @click.option(
     '--testing-mode',
@@ -58,7 +58,7 @@ from gensim.matutils import Sparse2Corpus
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 30 # トピックの数を事前に定義
+    define_topic = 5 # トピックの数を事前に定義
     hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
     label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
     test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
