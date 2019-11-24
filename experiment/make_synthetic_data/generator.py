@@ -6,9 +6,9 @@ import sys
 import click
 
 @click.command()
-@click.option('--topic_n', help = 'トピック数', type=int, default = 5)
-@click.option('--vacabulary_size', help = '単語数', type=int, default = 50)
-@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 3000)
+@click.option('--topic_n', help = 'トピック数', type=int, default = 3)
+@click.option('--vacabulary_size', help = '単語数', type=int, default = 5)
+@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 10)
 @click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 50)
 @click.option('--mode', help = 'zを固定するかどうか(Falseで固定,Trueで固定しない)', type=bool, default = False)
 @click.option('--test', help = 'テスト用のデータ作成(Falseで訓練用,Trueでテスト用)', type=bool, default = False)
@@ -21,7 +21,7 @@ def main(topic_n,
 	test
 	):
 	if test == True:
-	    doc_num = 1000
+	    doc_num = 10
 	    
 	# ハイパーパラメータの定義
 	TOPIC_N = topic_n # トピック数
@@ -64,7 +64,9 @@ def main(topic_n,
 
 		phi.append(topic)
 
-	#print("phi->",phi)
+	
+	print(f"phi->{phi}")
+	print(f"phi[0][0]->{phi[0][0]}")
 	# 各ファイル変数
 	output_f = open(FILE_NAME+'.doc','w')
 	z_f = open(FILE_NAME+'.z_feature','w')
@@ -98,14 +100,14 @@ def main(topic_n,
 		buffer = {}
 		z_buffer = {} # 真のzをトラッキングするための変数
 		theta = np.zeros((1,TOPIC_N), dtype = float)
-		# θのサンプリング
+		# θのサンプリング(トピック割当て確率を示す)
 		if (MODE == True):
 			theta[0][i%TOPIC_N] = 1.0
 		else:
 			theta = np.random.mtrand.dirichlet(alpha,size = 1)
 
 		for j in range(TERM_PER_DOC):
-			# zのサンプリング
+			# zのサンプリング（生成されるトピック）
 			z = np.random.multinomial(1,theta[0],size = 1)
 			z_assignment = 0
 			for k in range(TOPIC_N):
@@ -116,8 +118,8 @@ def main(topic_n,
 				z_buffer[z_assignment] = 0
 			z_buffer[z_assignment] = z_buffer[z_assignment] + 1
 			# トピックzからサンプリングされる観測w
-
 			w = np.random.multinomial(1,phi[z_assignment][0],size = 1)
+			
 			w_assignment = 0
 			for k in range(VOCABULARY_SIZE):
 				if w[0][k] == 1:
@@ -127,17 +129,18 @@ def main(topic_n,
 				buffer[w_assignment] = 0
 			buffer[w_assignment] = buffer[w_assignment] + 1
 
-
+		print("------------------------------------------")
 		#print("buffer->",buffer)
-		#print("theta->",theta)
+		print(f"theta->{theta[0]}")
 		#print("phi->",phi)
 		#print("EPOCH={}----------------------".format(i))
-		#print("z->", z)
-		#print("z_assignment->", z_assignment)
+		print(f"z->{z}")
+		print(f"z_assignment->{z_assignment}")
+		print(f"phi->{phi[z_assignment][0]}")
 		#print("z_buffer->", z_buffer)
 		#print("----------------------")
-		#print("w->", w)
-		#print("w_assignment->", w_assignment)
+		print(f"w->{w}")
+		print(f"w_assignment->{w_assignment}")
 		#print("buffer->", buffer)
 
 		"""

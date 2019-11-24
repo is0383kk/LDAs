@@ -16,7 +16,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
 
-define_topic = 5 # トピックの数を事前に定義
+define_topic = 30 # トピックの数を事前に定義
 hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
 label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
 test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
@@ -28,7 +28,7 @@ autoencoder = ProdLDA(
     hidden2_dimension=100,
     topics=define_topic
 )
-autoencoder.load_state_dict(torch.load('./sm_deeplda.pth'))
+autoencoder.load_state_dict(torch.load('./deeplda.pth'))
 #autoencoder.load_state_dict(torch.load('./deeplda.pth'))
 
 """
@@ -46,7 +46,7 @@ ds_val = TensorDataset(torch.from_numpy(test_hist).float(),torch.from_numpy(test
 
 print("autoencoder->{}".format(autoencoder))
 
-train_batch = 1000
+train_batch = 3000
 test_batch = 1000
 
 trainloader = DataLoader(
@@ -113,12 +113,12 @@ for x,t in enumerate(trainloader):
     recon, mean, logvar, z = autoencoder(t[0]) # 訓練後の潜在変数の抽出
     train_z = z.cpu()
     train_label = t[1].cpu()
-    predict_train_label = z.argmax(1).numpy()
+    predict_train_label = F.softmax(z,dim=1).argmax(1).numpy()
     print(f"predict_train_label->{predict_train_label}")
     train_ari = adjusted_rand_score(train_label,predict_train_label)
     print(f"TRAIN:ARI->{train_ari}")
     #visualize_zs_train(train_z.detach().numpy(), predict_train_label)
-    visualize_zs_train(train_z.detach().numpy(), train_label.detach().numpy())
+    #visualize_zs_train(train_z.detach().numpy(), train_label.detach().numpy())
     break
 
 
@@ -133,7 +133,7 @@ for x,t in enumerate(testloader):
     test_z = z.cpu()
     test_label = t[1].cpu()
     print(f"test_z->{test_z}")
-    predict_test_label = z.argmax(1).numpy()
+    predict_test_label = F.softmax(z,dim=1).argmax(1).numpy()
     test_ari = adjusted_rand_score(test_label,predict_test_label)
     print(f"TEST:ARI->{test_ari}")
     t2 = time.time()
@@ -154,5 +154,5 @@ for x,t in enumerate(testloader):
     潜在変数zの確認
     """
     #visualize_zs_test(test_z.detach().numpy(), predict_test_label)
-    visualize_zs_train(test_z.detach().numpy(), test_label.detach().numpy())
+    visualize_zs_test(test_z.detach().numpy(), test_label.detach().numpy())
     break
