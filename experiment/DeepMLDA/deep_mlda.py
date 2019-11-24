@@ -77,6 +77,10 @@ def main():#上のコマンドライン引数
     hidden2_dimension=100,
     )
     print(model)
+    print('Training stage.')
+    ae_optimizer = Adam(model.parameters(), 0.001, betas=(0.99, 0.999))
+
+
     model.eval()
 
     train_batch = 10

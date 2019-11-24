@@ -34,7 +34,7 @@ def copy_embeddings_(tensor: torch.Tensor, lookup: Mapping[int, torch.Tensor]) -
         if current_embedding is not None:
             tensor[:, index].copy_(current_embedding)
 
-def joint_encoder(input_x1_x2: int,
+def joint_encoder(input_x1_x2: int, # 入力次元数:x1の次元数+x2の次元数
             hidden1_dimension: int,
             hidden2_dimension: int,
             encoder_noise: float = 0.2) -> torch.nn.Module:
