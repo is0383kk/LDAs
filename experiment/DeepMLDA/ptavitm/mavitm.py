@@ -216,6 +216,88 @@ class MAVITM(nn.Module):
         z_hoge = self.sample_z(mean, logvar)
         return mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar, z_hoge
 
+    def jmvae_zero_loss(self,
+             x1_batch: torch.Tensor,
+             x2_batch: torch.Tensor,
+             mean: torch.Tensor,
+             logvar: torch.Tensor,
+             x1_recon: torch.Tensor,
+             x1_mean: torch.Tensor,
+             x1_logvar: torch.Tensor,
+             x2_recon: torch.Tensor,
+             x2_mean: torch.Tensor,
+             x2_logvar: torch.Tensor,
+             ) -> torch.Tensor:
+        """
+        https://arxiv.org/pdf/1611.01891.pdf
+        This is MAVITM's loss function based on JMVAE(zero)
+        JMVAEに基づいて目的関数を定義
+        """
+        x1_rl = -(x1_batch * (x1_recon + 1e-10).log()).sum(1)
+        x2_rl = -(x2_batch * (x2_recon + 1e-10).log()).sum(1)
+        ##############################################################################################
+        # 同時分布と事前分布とのKL計算
+        prior_mean = self.prior_mean.expand_as(mean)
+        prior_var = self.prior_var.expand_as(logvar)
+        prior_logvar = self.prior_logvar.expand_as(logvar)
+        var_division = logvar.exp() / prior_var # Σ_0 / Σ_1
+        diff = mean - prior_mean # μ_１ - μ_0
+        diff_term = diff *diff / prior_var # (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1
+        logvar_division = prior_logvar - logvar # log|Σ_1| - log|Σ_0| = log(|Σ_1|/|Σ_2|)
+        # KL
+        kld = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
+        ##############################################################################################
+        # JMVAE_loss
+        jmvae_zero_loss = (kld + x1_rl + x2_rl) # Equation (3) of paper
+        return jmvae_zero_loss
+
+    def kl_x1_x2(self,
+             mean: torch.Tensor,
+             logvar: torch.Tensor,
+             x1_mean: torch.Tensor,
+             x1_logvar: torch.Tensor,
+             x2_mean: torch.Tensor,
+             x2_logvar: torch.Tensor,
+             ) -> torch.Tensor:
+        """
+        https://arxiv.org/pdf/1611.01891.pdf
+        This is MAVITM's loss function based on JMVAE(zero)
+        JMVAEに基づいて目的関数を定義
+        """
+        ##############################################################################################
+        """
+        https://arxiv.org/pdf/1611.01891.pdf
+        """
+        # q(z|x1,x2) and q(z|x1)
+        x1_var_division = logvar.exp() / x1_logvar.exp()
+        x1_diff = mean - x1_mean
+        x1_diff_term = x1_diff *x1_diff / x1_logvar.exp()
+        x1_logvar_division = x1_logvar - logvar
+        # KL q(z|x1,x2) and q(z|x1)
+        x1_kld = 0.5 * ((x1_var_division + x1_diff_term + x1_logvar_division).sum(1) - self.topics)
+        ##############################################################################################
+        # q(z|x1,x2) and q(z|x2)
+        x2_var_division = logvar.exp() / x2_logvar.exp()
+        x2_diff = mean - x2_mean
+        x2_diff_term = x2_diff *x2_diff / x2_logvar.exp()
+        x2_logvar_division = x2_logvar - logvar
+        # KL q(z|x1,x2) and q(z|x2)
+        x2_kld = 0.5 * ((x2_var_division + x2_diff_term + x2_logvar_division).sum(1) - self.topics)
+        ##############################################################################################
+        # Equation (4) of paper
+        #print(f"x1_kld -> {x1_kld}")
+        #print(f"x2_kld -> {x2_kld}")
+        #print(f"x1_kld + x2_kld -> {x1_kld + x2_kld}")
+        return x1_kld + x2_kld
+
+    def jmvae_kl_loss(self,
+             jmvae_zero_loss: torch.Tensor,
+             kl_x1_x2: torch.Tensor,
+             alpha: float,
+             ) -> torch.Tensor:
+        loss = jmvae_zero_loss + (alpha * kl_x1_x2)
+        return loss
+
     def jmvae_loss(self,
              x1_batch: torch.Tensor,
              x2_batch: torch.Tensor,
@@ -248,7 +330,7 @@ class MAVITM(nn.Module):
         kld = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
         ##############################################################################################
         # JMVAE_loss
-        mvae_zero_loss = (kld + x1_rl + x2_rl) # Equation (3) of paper
+        jmvae_zero_loss = (kld + x1_rl + x2_rl) # Equation (3) of paper
         ##############################################################################################
         """
         https://arxiv.org/pdf/1611.01891.pdf
@@ -269,51 +351,9 @@ class MAVITM(nn.Module):
         # KL q(z|x1,x2) and q(z|x2)
         x2_kld = 0.5 * ((x2_var_division + x2_diff_term + x2_logvar_division).sum(1) - self.topics)
         ##############################################################################################
-        alpha = 1.0 # KL発散を防ぐハイパーパラメータ (page4:where α is a factor that regulates the KL divergence terms.)
-        loss = mvae_zero_loss - alpha * (x1_kld + x2_kld) # Equation (4) of paper
+        alpha = 0.1
+        loss = jmvae_zero_loss - alpha * (x1_kld + x2_kld) # Equation (4) of paper
+        #print(f"x1_kld -> {x1_kld}")
+        #print(f"x2_kld -> {x2_kld}")
+        #print(f"x1_kld + x2_kld -> {x1_kld + x2_kld}")
         return loss
-    """
-    def jmvae_loss(self,
-             x1_batch: torch.Tensor,
-             x2_batch: torch.Tensor,
-             mean: torch.Tensor,
-             logvar: torch.Tensor,
-             x1_recon: torch.Tensor,
-             x1_mean: torch.Tensor,
-             x1_logvar: torch.Tensor,
-             x2_recon: torch.Tensor,
-             x2_mean: torch.Tensor,
-             x2_logvar: torch.Tensor,
-             ) -> torch.Tensor:
-
-        self.prior_mean.requires_grad = False
-        self.prior_var.requires_grad = False
-        self.prior_logvar.requires_grad = False
-
-        x1_rl = -(x1_batch * (x1_recon + 1e-10).log()).sum(1)
-        x2_rl = -(x2_batch * (x2_recon + 1e-10).log()).sum(1)
-        ##############################################################################################
-        x1_prior_mean = self.x1_prior_mean.expand_as(x1_mean)
-        x1_prior_var = self.x1_prior_var.expand_as(x1_logvar)
-        x1_prior_logvar = self.x1_prior_logvar.expand_as(x1_logvar)
-        x1_var_division = x1_logvar.exp() / x1_prior_var # Σ_0 / Σ_1
-        x1_diff = x1_mean - x1_prior_mean # μ_１ - μ_0
-        x1_diff_term = x1_diff *x1_diff / x1_prior_var # (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1
-        x1_logvar_division = x1_prior_logvar - x1_logvar # log|Σ_1| - log|Σ_0| = log(|Σ_1|/|Σ_2|)
-        ##############################################################################################
-        x2_prior_mean = self.x2_prior_mean.expand_as(x2_mean)
-        x2_prior_var = self.x2_prior_var.expand_as(x2_logvar)
-        x2_prior_logvar = self.x2_prior_logvar.expand_as(x2_logvar)
-        x2_var_division = x2_logvar.exp() / x2_prior_var # Σ_0 / Σ_1
-        x2_diff = x2_mean - x2_prior_mean # μ_１ - μ_0
-        x2_diff_term = x2_diff *x2_diff / x2_prior_var # (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1
-        x2_logvar_division = x2_prior_logvar - x2_logvar # log|Σ_1| - log|Σ_0| = log(|Σ_1|/|Σ_2|)
-        ##############################################################################################
-        # KL
-        x1_kld = 0.5 * ((x1_var_division + x1_diff_term + x1_logvar_division).sum(1) - self.topics)
-        x2_kld = 0.5 * ((x2_var_division + x2_diff_term + x2_logvar_division).sum(1) - self.topics)
-        ##############################################################################################
-        x1_loss = (x1_rl + x1_kld)
-        x2_loss = (x2_rl + x2_kld)
-        return loss
-        """

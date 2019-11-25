@@ -81,9 +81,9 @@ def main():#上のコマンドライン引数
     ae_optimizer = Adam(model.parameters(), 0.001, betas=(0.99, 0.999))
 
 
-    model.eval()
+    #model.eval()
 
-    train_batch = 10
+    train_batch = 32
     trainloader = DataLoader(
         ds_train,
         batch_size=train_batch,
@@ -101,12 +101,24 @@ def main():#上のコマンドライン引数
     x2_mean: torch.Tensor,
     x2_logvar: torch.Tensor
     """
-    for x,t in enumerate(trainloader):
-        #print(f"X1->{t[0]}")
-        #print(f"X2->{t[0]}")
-        mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0],t[1])
-        loss = model.jmvae_loss(t[0], t[1], mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar).mean()
-        print(f'loss -> {loss}')
+    model.train()
+    for i in range(1000):
+        print(f"Epoch -> {i}")
+        for x,t in enumerate(trainloader):
+            #print(f"X1->{t[0]}")
+            #print(f"X2->{t[0]}")
+            mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0],t[1])
+            jmvae_zero_loss = model.jmvae_zero_loss(t[0], t[1], mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar).mean()
+            kl_x1_x2 = model.kl_x1_x2(mean, logvar, x1_mean, x1_logvar, x2_mean, x2_logvar).mean()
+            #print(f'jmvae_zero_loss -> {jmvae_zero_loss}')
+            #print(f'kl_x1_x2 -> {kl_x1_x2}')
+            loss = model.jmvae_kl_loss(jmvae_zero_loss, kl_x1_x2, 10)
+
+            print(f'loss -> {loss}')
+
+            ae_optimizer.zero_grad()
+            loss.backward()
+            ae_optimizer.step(closure=None)
 
 if __name__ == '__main__':
     main()
