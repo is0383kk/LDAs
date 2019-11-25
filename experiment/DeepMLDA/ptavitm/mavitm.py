@@ -124,16 +124,6 @@ class MAVITM(nn.Module):
         self.prior_mean.requires_grad = False
         self.prior_var.requires_grad = False
         self.prior_logvar.requires_grad = False
-        self.x1_prior_mean, self.x1_prior_var = map(nn.Parameter, prior(topics, 0.9))
-        self.x1_prior_logvar = nn.Parameter(self.x1_prior_var.log())
-        self.x1_prior_mean.requires_grad = False
-        self.x1_prior_var.requires_grad = False
-        self.x1_prior_logvar.requires_grad = False
-        self.x2_prior_mean, self.x2_prior_var = map(nn.Parameter, prior(topics, 0.9))
-        self.x2_prior_logvar = nn.Parameter(self.x2_prior_var.log())
-        self.x2_prior_mean.requires_grad = False
-        self.x2_prior_var.requires_grad = False
-        self.x2_prior_logvar.requires_grad = False
         # do not learn the batchnorm weight, setting it to 1 as in https://git.io/fhtsY
         for component in [self.mean, self.logvar, self.x1_mean, self.x1_logvar, self.x2_mean, self.x2_logvar,  self.x1_generator, self.x2_generator]:
             component.batchnorm.weight.requires_grad = False
