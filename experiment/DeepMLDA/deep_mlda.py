@@ -88,13 +88,25 @@ def main():#上のコマンドライン引数
         ds_train,
         batch_size=train_batch,
     )
+    """
+    jmvae_loss->
+    x1_batch: torch.Tensor,
+    x2_batch: torch.Tensor,
+    mean: torch.Tensor,
+    logvar: torch.Tensor,
+    x1_recon: torch.Tensor,
+    x1_mean: torch.Tensor,
+    x1_logvar: torch.Tensor,
+    x2_recon: torch.Tensor,
+    x2_mean: torch.Tensor,
+    x2_logvar: torch.Tensor
+    """
     for x,t in enumerate(trainloader):
         #print(f"X1->{t[0]}")
         #print(f"X2->{t[0]}")
-        mean, logvar, x1_mean, x1_logvar, x2_mean, x2_logvar, x1_recon, x2_recon, z_hoge = model(t[0],t[1])
-
-
-
+        mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0],t[1])
+        loss = model.jmvae_loss(t[0], t[1], mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar).mean()
+        print(f'loss -> {loss}')
 
 if __name__ == '__main__':
     main()
