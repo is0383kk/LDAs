@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch.utils.data import TensorDataset
 #from ptavitm.vae import ProdLDA
-from ptavitm.vae_tanh import ProdLDA
+from ptavitm.mavitm import MAVITM
 # データローダ
 from torch.utils.data import DataLoader
 import time
@@ -17,18 +17,22 @@ import torch.nn.functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
 
 define_topic = 30 # トピックの数を事前に定義
-hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
-label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
+x1_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
+x2_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
+x1_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
+x2_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt" , dtype=np.int32)
 test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
 test_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt" , dtype=np.int32)
 
-autoencoder = ProdLDA(
-    in_dimension=len(hist[0]),# 入力,本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
-    hidden1_dimension=100, # 中間層
-    hidden2_dimension=100,
-    topics=define_topic
+model = MAVITM(
+topics=define_topic,
+joint_input = len(x1_hist[0])+len(x2_hist[0]),
+input_x1=len(x1_hist[0]),
+input_x2=len(x2_hist[0]),
+hidden1_dimension=100,
+hidden2_dimension=100,
 )
-autoencoder.load_state_dict(torch.load('./deeplda.pth'))
+model.load_state_dict(torch.load('./deepmlda.pth'))
 #autoencoder.load_state_dict(torch.load('./deeplda.pth'))
 
 """
@@ -40,13 +44,13 @@ BoWと同じように訓練できるようにしただけ
 # ここまでがBoFを作成する作業#############################################
 print('Loading input data')
 #データセット定義
-ds_train = TensorDataset(torch.from_numpy(hist).float(),torch.from_numpy(label).int())
-ds_val = TensorDataset(torch.from_numpy(test_hist).float(),torch.from_numpy(test_label).int())
+ds_train = TensorDataset(torch.from_numpy(x1_hist).float(),torch.from_numpy(x2_hist).float(),x1_label)
+ds_val = TensorDataset(torch.from_numpy(x1_hist).float(),torch.from_numpy(x2_hist).float(),x2_label)
 #モデルの定義
 
 print("autoencoder->{}".format(autoencoder))
 
-train_batch = 3000
+train_batch = 1000
 test_batch = 1000
 
 trainloader = DataLoader(
@@ -110,10 +114,10 @@ def visualize_zs_test(zs, labels):
     plt.savefig('./sample_z/'+'TEST'+'k'+str(define_topic)+'v'+str(test_hist.shape[1])+'d'+str(test_batch)+'.png')
 
 for x,t in enumerate(trainloader):
-    recon, mean, logvar, z = autoencoder(t[0]) # 訓練後の潜在変数の抽出
-    train_z = z.cpu()
-    train_label = t[1].cpu()
-    predict_train_label = F.softmax(z,dim=1).argmax(1).numpy()
+    mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0],t[1])
+    train_z = z_hoge.cpu()
+    train_label = t[2].cpu()
+    predict_train_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
     print(f"predict_train_label->{predict_train_label}")
     train_ari = adjusted_rand_score(train_label,predict_train_label)
     print(f"TRAIN:ARI->{train_ari}")
@@ -129,11 +133,11 @@ for x,t in enumerate(testloader):
     t[1]:人口データを元に付けた文書ラベル
     """
     t1 = time.time()
-    recon, mean, logvar, z = autoencoder(t[0]) # 訓練後の潜在変数の抽出
-    test_z = z.cpu()
-    test_label = t[1].cpu()
+    mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0],t[1])
+    test_z = z_hoge.cpu()
+    test_label = t[2].cpu()
     print(f"test_z->{test_z}")
-    predict_test_label = F.softmax(z,dim=1).argmax(1).numpy()
+    predict_test_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
     test_ari = adjusted_rand_score(test_label,predict_test_label)
     print(f"TEST:ARI->{test_ari}")
     t2 = time.time()

@@ -7,9 +7,9 @@ import click
 
 @click.command()
 @click.option('--topic_n', help = 'トピック数', type=int, default = 3)
-@click.option('--vacabulary_size', help = '単語数', type=int, default = 30)
-@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 1000)
-@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 50)
+@click.option('--vacabulary_size', help = '単語数', type=int, default = 5)
+@click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 10)
+@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 5)
 @click.option('--mode', help = 'zを固定するかどうか(Falseで固定,Trueで固定しない)', type=bool, default = False)
 @click.option('--test', help = 'テスト用のデータ作成(Falseで訓練用,Trueでテスト用)', type=bool, default = False)
 
@@ -30,7 +30,7 @@ def main(topic_n,
 	TERM_PER_DOC = term_per_doc # ドキュメントごとの単語数
 	MODE = mode
 
-	beta = [1.0 for i in range(VOCABULARY_SIZE)] # ディレクレ分布のパラメータ(グラフィカルモデル右端)
+	beta = [10.0 for i in range(VOCABULARY_SIZE)] # ディレクレ分布のパラメータ(グラフィカルモデル右端)
 	alpha = [1.0 for i in range(TOPIC_N)] # #ディレクレ分布のパラメータ(グラフィカルモデル左端)
 
 
@@ -65,8 +65,6 @@ def main(topic_n,
 		phi.append(topic)
 
 	
-	print(f"phi->{phi}")
-	print(f"phi[0][0]->{phi[0][0]}")
 	# 各ファイル変数
 	output_f = open(FILE_NAME+'.doc','w')
 	z_f = open(FILE_NAME+'.z_feature','w')
@@ -105,10 +103,11 @@ def main(topic_n,
 			theta[0][i%TOPIC_N] = 1.0
 		else:
 			theta = np.random.mtrand.dirichlet(alpha,size = 1)
-
 		for j in range(TERM_PER_DOC):
 			# zのサンプリング（生成されるトピック）
 			z = np.random.multinomial(1,theta[0],size = 1)
+			print(f"theta -> {theta}")
+			print(f"z->{z[0]}")
 			z_assignment = 0
 			for k in range(TOPIC_N):
 				if z[0][k] == 1:
@@ -119,7 +118,8 @@ def main(topic_n,
 			z_buffer[z_assignment] = z_buffer[z_assignment] + 1
 			# トピックzからサンプリングされる観測w
 			w = np.random.multinomial(1,phi[z_assignment][0],size = 1)
-			
+			print(f"phi[z_assignment] -> {phi[z_assignment]}")
+			print(f"w -> {w[0]}")
 			w_assignment = 0
 			for k in range(VOCABULARY_SIZE):
 				if w[0][k] == 1:
@@ -130,17 +130,20 @@ def main(topic_n,
 			buffer[w_assignment] = buffer[w_assignment] + 1
 
 		print("------------------------------------------")
+		#print(f"phi[トピック0の単語の生成確率] -> {phi[0][0]}")
+		#print(f"phi[トピック1の単語の生成確率] -> {phi[1][0]}")
+		#print(f"phi[トピック2の単語の生成確率] -> {phi[2][0]}")
 		#print("buffer->",buffer)
-		print(f"theta->{theta[0]}")
+		#print(f"theta->{theta[0]}")
 		#print("phi->",phi)
 		#print("EPOCH={}----------------------".format(i))
-		print(f"z->{z}")
-		print(f"z_assignment->{z_assignment}")
-		print(f"phi->{phi[z_assignment][0]}")
+		#print(f"z->{z}")
+		#print(f"z_assignment->{z_assignment}")
+		#print(f"phi->{phi[z_assignment][0]}")
 		#print("z_buffer->", z_buffer)
 		#print("----------------------")
-		print(f"w->{w}")
-		print(f"w_assignment->{w_assignment}")
+		#print(f"w->{w}")
+		#print(f"w_assignment->{w_assignment}")
 		#print("buffer->", buffer)
 
 		"""

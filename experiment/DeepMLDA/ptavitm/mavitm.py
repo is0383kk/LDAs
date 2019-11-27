@@ -34,42 +34,42 @@ def copy_embeddings_(tensor: torch.Tensor, lookup: Mapping[int, torch.Tensor]) -
         if current_embedding is not None:
             tensor[:, index].copy_(current_embedding)
 
-def joint_encoder(input_x1_x2: int, # 入力次元数:x1の次元数+x2の次元数
+def joint_encoder(joint_input: int, # 入力次元数:x1の次元数+x2の次元数
             hidden1_dimension: int,
             hidden2_dimension: int,
             encoder_noise: float = 0.2) -> torch.nn.Module:
     return nn.Sequential(OrderedDict([
-        ('linear1', nn.Linear(input_x1_x2, hidden1_dimension)),
-        ('act1', nn.Softplus()),
+        ('linear1', nn.Linear(joint_input, hidden1_dimension)),
+        ('act1', nn.Tanh()),
         ('linear2', nn.Linear(hidden1_dimension, hidden2_dimension)),
-        ('act2', nn.Softplus()),
+        ('act2', nn.Tanh()),
         ('dropout', nn.Dropout(encoder_noise))
     ]))
 
-def encoder(input_x1: int,
+def encoder(input_x: int,
             hidden1_dimension: int,
             hidden2_dimension: int,
             encoder_noise: float = 0.2) -> torch.nn.Module:
     return nn.Sequential(OrderedDict([
-        ('linear1', nn.Linear(input_x1, hidden1_dimension)),
-        ('act1', nn.Softplus()),
+        ('linear1', nn.Linear(input_x, hidden1_dimension)),
+        ('act1', nn.Tanh()),
         ('linear2', nn.Linear(hidden1_dimension, hidden2_dimension)),
-        ('act2', nn.Softplus()),
+        ('act2', nn.Tanh()),
         ('dropout', nn.Dropout(encoder_noise))
     ]))
 
-
-def decoder(input_x1: int,
+def decoder(input_x: int,
             topics: int,
             decoder_noise: float,
             eps: float,
             momentum: float) -> torch.nn.Module:
     return nn.Sequential(OrderedDict([
-        ('linear', nn.Linear(topics, input_x1, bias=False)),
-        ('batchnorm', nn.BatchNorm1d(input_x1, affine=True, eps=eps, momentum=momentum)),
+        ('linear', nn.Linear(topics, input_x, bias=False)),
+        ('batchnorm', nn.BatchNorm1d(input_x, affine=True, eps=eps, momentum=momentum)),
         ('act', nn.Softmax(dim=1)),
         ('dropout', nn.Dropout(decoder_noise))
     ]))
+
 
 
 def hidden(hidden2_dimension: int,
@@ -154,8 +154,7 @@ class MAVITM(nn.Module):
         """
         同時分布を求める推論ネットワーク用
         """
-        input_data = torch.cat((x1_batch, x2_batch), 1)
-        encoded = self.inference(input_data)
+        encoded = self.inference(torch.cat([x1_batch, x2_batch], 1))
         return encoded, self.mean(encoded), self.logvar(encoded)
 
     def inferenceX1(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -201,10 +200,71 @@ class MAVITM(nn.Module):
         _, mean, logvar = self.joint_encode(x1_batch,x2_batch) # 同時分布の平均と分散
         _, x1_mean, x1_logvar = self.inferenceX1(x1_batch) # x1モダリティの平均と分散
         _, x2_mean, x2_logvar = self.inferenceX2(x2_batch) # x2モダリティの平均と分散
-        x1_recon = self.generatorX1(mean, logvar) # 同時分布から生成したx1モダリティの復元誤差
-        x2_recon = self.generatorX2(mean, logvar) # 同時分布から生成したx2モダリティの復元誤差
+        jmvae_x1_recon = self.generatorX1(mean, logvar) # 同時分布から生成したx1モダリティの復元誤差
+        jmvae_x2_recon = self.generatorX2(mean, logvar) # 同時分布から生成したx2モダリティの復元誤差
+        x1_recon = self.generatorX1(x1_mean, x1_logvar) # 同時分布から生成したx1モダリティの復元誤差
+        x2_recon = self.generatorX2(x1_mean, x2_logvar) # 同時分布から生成したx2モダリティの復元誤差
         z_hoge = self.sample_z(mean, logvar)
-        return mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar, z_hoge
+        return mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge
+
+    def telbo(self,
+             x1_batch: torch.Tensor,
+             x2_batch: torch.Tensor,
+             mean: torch.Tensor,
+             logvar: torch.Tensor,
+             jmvae_x1_recon: torch.Tensor,
+             x1_recon: torch.Tensor,
+             x1_mean: torch.Tensor,
+             x1_logvar: torch.Tensor,
+             jmvae_x2_recon: torch.Tensor,
+             x2_recon: torch.Tensor,
+             x2_mean: torch.Tensor,
+             x2_logvar: torch.Tensor,
+             a: float,
+             b: float,
+             c: float,
+             ) -> torch.Tensor:
+        jmvae_x1_rl = -(x1_batch * (jmvae_x1_recon + 1e-10).log()).sum(1)
+        jmvae_x2_rl = -(x2_batch * (jmvae_x2_recon + 1e-10).log()).sum(1)
+        x1_rl = -(x1_batch * (x1_recon + 1e-10).log()).sum(1)
+        x2_rl = -(x2_batch * (x2_recon + 1e-10).log()).sum(1)
+        ##############################################################################################
+        # 同時分布と事前分布とのKL計算
+        prior_mean = self.prior_mean.expand_as(mean)
+        prior_var = self.prior_var.expand_as(logvar)
+        prior_logvar = self.prior_logvar.expand_as(logvar)
+        var_division = logvar.exp() / prior_var # Σ_0 / Σ_1
+        diff = mean - prior_mean # μ_１ - μ_0
+        diff_term = diff *diff / prior_var # (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1
+        logvar_division = prior_logvar - logvar # log|Σ_1| - log|Σ_0| = log(|Σ_1|/|Σ_2|)
+        # KL
+        kld = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
+        # x1のKL
+        x1_prior_mean = self.prior_mean.expand_as(x1_mean)
+        x1_prior_var = self.prior_var.expand_as(x1_logvar)
+        x1_prior_logvar = self.prior_logvar.expand_as(x1_logvar)
+        x1_var_division = x1_logvar.exp() / x1_prior_var # Σ_0 / Σ_1
+        x1_diff = x1_mean - x1_prior_mean # μ_１ - μ_0
+        x1_diff_term = x1_diff *x1_diff / x1_prior_var # (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1
+        x1_logvar_division = x1_prior_logvar - x1_logvar # log|Σ_1| - log|Σ_0| = log(|Σ_1|/|Σ_2|)
+        # KL
+        x1_kld = 0.5 * ((x1_var_division + x1_diff_term + x1_logvar_division).sum(1) - self.topics)
+        # x2のKL
+        x2_prior_mean = self.prior_mean.expand_as(x2_mean)
+        x2_prior_var = self.prior_var.expand_as(x2_logvar)
+        x2_prior_logvar = self.prior_logvar.expand_as(x2_logvar)
+        x2_var_division = x2_logvar.exp() / x2_prior_var # Σ_0 / Σ_1
+        x2_diff = x2_mean - x2_prior_mean # μ_１ - μ_0
+        x2_diff_term = x2_diff *x2_diff / x2_prior_var # (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1
+        x2_logvar_division = x2_prior_logvar - x2_logvar # log|Σ_1| - log|Σ_0| = log(|Σ_1|/|Σ_2|)
+        # KL
+        x2_kld = 0.5 * ((x2_var_division + x2_diff_term + x2_logvar_division).sum(1) - self.topics)
+        ##############################################################################################
+        # JMVAE_loss, TELBO_lossの第１項
+        jmvae_zero_loss = (kld + jmvae_x1_rl + jmvae_x2_rl) # Equation (3) of paper of JMVAE
+        x1_elbo = x1_kld + x1_rl
+        x2_elbo = x2_kld + x2_rl
+        return a * jmvae_zero_loss + b * x1_elbo + c * x2_elbo
 
     def jmvae_zero_loss(self,
              x1_batch: torch.Tensor,

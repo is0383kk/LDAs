@@ -22,16 +22,46 @@ from gensim.corpora.dictionary import Dictionary
 from gensim.models.coherencemodel import CoherenceModel
 from gensim.matutils import Sparse2Corpus
 
+@click.command()
+@click.option(
+    '--cuda',
+    help='CUDAを使用するかどうか (default False).',
+    type=bool,
+    default=False
+)
+@click.option(
+    '--batch-size',
+    help='バッチサイズ(文書数/batch_size ).',
+    type=int,
+    default=32
+)
+@click.option(
+    '--epochs',
+    help='学習エポック (default 5).',
+    type=int,
+    default=100
+)
+@click.option(
+    '--top-words',
+    help='各トピックにおいて表示するトップ単語の数 (default 12).',
+    type=int,
+    default=32
+)
+@click.option(
+    '--testing-mode',
+    help='テストモードで実行するかどうか (default False).',
+    type=bool,
+    default=False
+)
 
-
-def main():#上のコマンドライン引数
+def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
     define_topic = 3 # トピックの数を事前に定義
-    x1_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
-    x2_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
-    x1_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
-    x2_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt" , dtype=np.int32)
-    test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
-    test_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt" , dtype=np.int32)
+    x1_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_train.txt" , dtype=float)
+    x2_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_train2.txt" , dtype=float)
+    x1_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_train_label.txt" , dtype=np.int32)
+    x2_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_train_label2.txt" , dtype=np.int32)
+    test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_test.txt" , dtype=float)
+    test_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_test_label.txt" , dtype=np.int32)
     """
     データセットの読み込み
     BoFヒストグラムの作成
@@ -63,12 +93,8 @@ def main():#上のコマンドライン引数
     ds_train = TensorDataset(torch.from_numpy(x1_hist).float(),torch.from_numpy(x2_hist).float())
     ds_val = TensorDataset(torch.from_numpy(x1_hist).float(),torch.from_numpy(x2_hist).float())
 
+    writer = SummaryWriter()
     model = MAVITM(
-    #topics=define_topic,
-    #input_x1=len(hist[0]),# 入力,本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
-    #input_x2=len(hist[0]),
-    #hidden1_dimension=100,
-    #hidden2_dimension=100,
     topics=define_topic,
     joint_input = len(x1_hist[0])+len(x2_hist[0]),
     input_x1=len(x1_hist[0]),
@@ -79,46 +105,54 @@ def main():#上のコマンドライン引数
     print(model)
     print('Training stage.')
     ae_optimizer = Adam(model.parameters(), 0.001, betas=(0.99, 0.999))
-
-
-    #model.eval()
+    def training_callback(autoencoder, epoch, lr, loss, perplexity):
+        writer.add_scalars('data/autoencoder', {
+            'lr': lr,
+            'loss': loss,
+            'perplexity': perplexity,
+        }, global_step=epoch)
+        decoder_weight = model.x1_generator.linear.weight.detach().cpu()
+        topics = [
+            [x1_reverse_vocab[item.item()] for item in topic]
+            for topic in decoder_weight.topk(top_words, dim=0)[1].t()
+        ]
+    train(
+        ds_train,
+        model,
+        cuda=cuda,
+        validation=ds_val,
+        epochs=epochs,
+        batch_size=batch_size,
+        optimizer=ae_optimizer,
+        update_callback=training_callback
+    )
+    print('Evaluation stage.')
+    """
 
     train_batch = 32
     trainloader = DataLoader(
         ds_train,
         batch_size=train_batch,
     )
-    """
-    jmvae_loss->
-    x1_batch: torch.Tensor,
-    x2_batch: torch.Tensor,
-    mean: torch.Tensor,
-    logvar: torch.Tensor,
-    x1_recon: torch.Tensor,
-    x1_mean: torch.Tensor,
-    x1_logvar: torch.Tensor,
-    x2_recon: torch.Tensor,
-    x2_mean: torch.Tensor,
-    x2_logvar: torch.Tensor
-    """
-    model.train()
+
     for i in range(1000):
         print(f"Epoch -> {i}")
         for x,t in enumerate(trainloader):
             #print(f"X1->{t[0]}")
             #print(f"X2->{t[0]}")
-            mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0],t[1])
-            jmvae_zero_loss = model.jmvae_zero_loss(t[0], t[1], mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar).mean()
-            kl_x1_x2 = model.kl_x1_x2(mean, logvar, x1_mean, x1_logvar, x2_mean, x2_logvar).mean()
+            mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0],t[1])
+            #jmvae_zero_loss = model.jmvae_zero_loss(t[0], t[1], mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar).mean()
+            #kl_x1_x2 = model.kl_x1_x2(mean, logvar, x1_mean, x1_logvar, x2_mean, x2_logvar).mean()
             #print(f'jmvae_zero_loss -> {jmvae_zero_loss}')
             #print(f'kl_x1_x2 -> {kl_x1_x2}')
-            loss = model.jmvae_kl_loss(jmvae_zero_loss, kl_x1_x2, 10)
+            #loss = model.jmvae_kl_loss(jmvae_zero_loss, kl_x1_x2, 10)
+            loss = model.telbo(t[0], t[1], mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, 1.0, 1.0, 1.0).mean()
 
             print(f'loss -> {loss}')
 
             ae_optimizer.zero_grad()
             loss.backward()
             ae_optimizer.step(closure=None)
-
+    """
 if __name__ == '__main__':
     main()

@@ -85,16 +85,24 @@ def train(dataset: torch.utils.data.Dataset,
         )
         losses = []
         for index, batch in enumerate(data_iterator):
-            batch = batch[0]
+            x1_batch = batch[0]
+            x2_batch = batch[1]
             if cuda:
-                batch = batch.cuda(non_blocking=True)
+                x1_batch = x1_batch.cuda(non_blocking=True)
+                x2_batch = x2_batch.cuda(non_blocking=True)
             # run the batch through the autoencoder and obtain the output
             if corruption is not None:
-                recon, mean, logvar, z = autoencoder(F.dropout(batch, corruption))
+                mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = autoencoder(F.dropout(x1_batch, x2_batch, corruption))
             else:
-                recon, mean, logvar, z = autoencoder(batch)
+                mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = autoencoder(x1_batch, x2_batch)
             # calculate the loss and backprop
-            loss = autoencoder.loss(batch, recon, mean, logvar).mean()
+            #jmvae_zero_loss = autoencoder.jmvae_zero_loss(x1_batch, x2_batch, mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar).mean()
+            #kl_x1_x2 = autoencoder.kl_x1_x2(mean, logvar, x1_mean, x1_logvar, x2_mean, x2_logvar).mean()
+            #print(f'jmvae_zero_loss -> {jmvae_zero_loss}')
+            #print(f'kl_x1_x2 -> {kl_x1_x2}')
+            #loss = autoencoder.jmvae_kl_loss(jmvae_zero_loss, kl_x1_x2, 10)
+            #loss = jmvae_zero_loss
+            loss = autoencoder.telbo(x1_batch, x2_batch, mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon,x2_mean ,x2_logvar, 1.0, 1.0, 1.0).mean()
             loss_value = float(loss.mean().item())
             optimizer.zero_grad()
             loss.backward()
@@ -170,7 +178,7 @@ def train(dataset: torch.utils.data.Dataset,
     axR.grid(True)
 
     fig.savefig('lp.png')
-    torch.save(autoencoder.state_dict(), 'deeplda.pth')
+    torch.save(autoencoder.state_dict(), 'deepmlda.pth')
 
 def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda: bool = False, silent: bool = False):
     model.eval()
@@ -178,12 +186,16 @@ def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda
     losses = []
     counts = []
     for index, batch in enumerate(data_iterator):
-        batch = batch[0]
+        x1_batch = batch[0]
+        x2_batch = batch[1]
         if cuda:
-            batch = batch.cuda(non_blocking=True)
-        recon, mean, logvar, z = model(batch)
-        losses.append(model.loss(batch, recon, mean, logvar).detach().cpu())
-        counts.append(batch.sum(1).detach().cpu())
+            x1_batch = x1_batch.cuda(non_blocking=True)
+            x2_batch = x2_batch.cuda(non_blocking=True)
+        mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(x1_batch, x2_batch)
+        #print(f'jmvae_zero_loss -> {jmvae_zero_loss}')
+        #print(f'kl_x1_x2 -> {kl_x1_x2}')
+        losses.append(model.jmvae_zero_loss(x1_batch, x2_batch, mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar).detach().cpu())
+        counts.append(x1_batch.sum(1).detach().cpu())
         #print("torch.cat(counts)",torch.cat(counts))
         #print("len(counts)",len(counts))
         #print("torch.cat(losses)",torch.cat(losses))
@@ -192,26 +204,6 @@ def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda
         #print("(torch.cat(losses) / torch.cat(counts)).mean()",(torch.cat(losses) / torch.cat(counts)).mean())
         #print("(torch.cat(losses) / torch.cat(counts)).mean()",(torch.cat(losses) / torch.cat(counts)).mean().exp().item())
     return float((torch.cat(losses) / torch.cat(counts)).mean().exp().item())
-
-def compute_perplexity(model, dataloader):
-
-    model.eval()
-    loss = 0
-
-    with torch.no_grad():
-        for i, data_bow in enumerate(dataloader):
-            data_bow = data_bow.to(device)
-            data_bow_norm = F.normalize(data_bow)
-
-            z, g, recon_batch, mu, logvar = model(data_bow_norm)
-
-            #loss += loss_function(recon_batch, data_bow, mu, logvar).detach()
-            loss += F.binary_cross_entropy(recon_batch, data_bow, size_average=False)
-
-    loss = loss / dataloader.word_count
-    perplexity = np.exp(loss.cpu().numpy())
-
-    return perplexity
 
 def predict(dataset: torch.utils.data.Dataset,
             model: torch.nn.Module,
