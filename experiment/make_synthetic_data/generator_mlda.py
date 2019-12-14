@@ -1,4 +1,7 @@
 ## LDAの生成過程を用いたSynthetic dataの生成を行うプログラム
+"""
+基本的に不正操作(theta, phi_w, phi_f を手動設定)しないとARIが0に近い値を算出する
+"""
 import math
 import random
 import numpy as np
@@ -6,10 +9,10 @@ import sys
 import click
 
 @click.command()
-@click.option('--topic_n', help = 'トピック数', type=int, default = 2)
-@click.option('--vacabulary_size', help = '単語数', type=int, default = 10)
-@click.option('--hist_num', help = '文書数（ヒストグラムの列数）', type=int, default = 10)
-@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 10)
+@click.option('--topic_n', help = 'トピック数', type=int, default = 5)
+@click.option('--vacabulary_size', help = '単語数', type=int, default = 50)
+@click.option('--hist_num', help = '文書数（ヒストグラムの列数）', type=int, default = 1000)
+@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 50)
 @click.option('--mode', help = 'zを固定するかどうか(Falseで固定,Trueで固定しない)', type=bool, default = False)
 @click.option('--test', help = 'テスト用のデータ作成(Falseで訓練用,Trueでテスト用)', type=bool, default = False)
 
@@ -20,7 +23,7 @@ def main(topic_n,
 	mode,
 	test):
 	if test == True:
-	    hist_num = 3000
+	    hist_num = 1000
 
 	# ハイパーパラメータの定義
 	TOPIC_N = topic_n # トピック数
@@ -43,7 +46,8 @@ def main(topic_n,
 	hist_f = np.zeros( (HIST_H_SIZE, TERM_PER_SIZE) ) # ヒストグラム格納用の変数
 	label_z = np.zeros(HIST_H_SIZE) # 単語の潜在変数を元に文書ラベルを決定する変数
 	z_max = -1145141919810 # z_countと比較するための変数
-
+	tpd_t = int(TERM_PER_SIZE / TOPIC_N) # 不正操作用の変数．単語生成確率を操作
+	prob = float(1 / tpd_t) # 不正操作用の変数．
 	#print(document_label[0])
 	#print(hist)
 	#print(hist[0])
@@ -54,15 +58,20 @@ def main(topic_n,
 	topic_w = []
 	topic_f = []
 	for i in range(TOPIC_N):
-		topic_w = np.random.mtrand.dirichlet(beta_w, size = 1)
-		topic_f = np.random.mtrand.dirichlet(beta_f, size = 1)
-		phi_w.append(topic_w)
-		phi_f.append(topic_f)
+		if MODE == True:
+			topic_w = np.zeros(TERM_PER_SIZE)
+			topic_w[i*tpd_t : tpd_t*(i+1)] = prob
+			print(topic_w[::-1])
+			phi_w.append(topic_w)
+			phi_f.append(topic_w[::-1])
+		else:
+			topic_w = np.random.mtrand.dirichlet(beta_w, size = 1)
+			topic_f = np.random.mtrand.dirichlet(beta_f, size = 1)
+			phi_w.append(topic_w)
+			phi_f.append(topic_f)
+	print(f"phi_w->{phi_w}")
+	print(f"phi_f->{phi_f}")
 
-	tpd_t = int(TERM_PER_SIZE / TOPIC_N)
-	vcb_t = int(HIST_W_SIZE / TOPIC_N)
-
-	#phi_w[0][0][0] = 5
 
 
 	# 各ファイル変数
@@ -104,10 +113,16 @@ def main(topic_n,
 			z_buffer[z_assignment] = z_buffer[z_assignment] + 1
 			# トピックzからサンプリングされる観測w
 			#print(f"z_assignment-> {z_assignment}")
-			#print(f"phi_w-> {phi_w[1][0]}")
+			#print(f"phi_w-> {phi_w[z_assignment][0]}")
 			#print(f"phi_w[z]-> {phi_w[z_assignment][0]}")
-			w = np.random.multinomial(1,phi_w[z_assignment][0],size = 1)
-			f = np.random.multinomial(1,phi_f[z_assignment][0],size = 1)
+			if MODE == True:
+				# 不正操作モード
+				w = np.random.multinomial(1,phi_w[z_assignment],size = 1)
+				f = np.random.multinomial(1,phi_f[z_assignment],size = 1)
+			else:
+				# 一様乱数モード
+				w = np.random.multinomial(1,phi_w[z_assignment][0],size = 1)
+				f = np.random.multinomial(1,phi_f[z_assignment][0],size = 1)
 			#print(f"phi_w[z_assignment] -> {phi_w[z_assignment]}")
 			#print(f"w -> {w[0]}")
 			w_assignment = 0
@@ -193,22 +208,17 @@ def main(topic_n,
 	"""
 	if test == False:
 		np.savetxt( "k"+str(topic_n)+"tr_w.txt", hist_w, fmt=str("%d") )
-		np.savetxt( "k"+str(topic_n)+"tr_f.txt", hist_w, fmt=str("%d") )
+		np.savetxt( "k"+str(topic_n)+"tr_f.txt", hist_f, fmt=str("%d") )
 		np.savetxt( "k"+str(topic_n)+"tr_z.txt", label_z, fmt=str("%d") )
 	else:
 		np.savetxt( "k"+str(topic_n)+"te_w.txt", hist_w, fmt=str("%d") )
 		np.savetxt( "k"+str(topic_n)+"te_f.txt", hist_f, fmt=str("%d") )
 		np.savetxt( "k"+str(topic_n)+"te_z.txt", label_z, fmt=str("%d") )
 	print("トピックが重複している文書",remove_label)
-	#rint(f"phi_w[0]->{phi_w[0][0]}")
-	#phi_w[0][0][0] = 5
-	#print(f"phi_w[0]->{phi_w[0][0]}")
-	#print(f"phi_w[0]->{phi_w[0][0][0]}")
-	#print(f"phi_w[1]->{phi_w[1][0]}")
-	#print(f"phi_w[2]->{phi_w[2][0]}")
-	#print(f"phi_f->{phi_f}")
-	print("モード選択->{}".format(MODE))
-	print("データ選択->{}".format(test))
+	print("不正操作モード選択->{}".format(MODE))
+	print("テストデータ生成->{}".format(test))
+
+
 
 if __name__ == "__main__":
 	main()

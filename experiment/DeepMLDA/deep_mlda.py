@@ -45,7 +45,7 @@ from gensim.matutils import Sparse2Corpus
     '--top-words',
     help='各トピックにおいて表示するトップ単語の数 (default 12).',
     type=int,
-    default=32
+    default=5
 )
 @click.option(
     '--testing-mode',
@@ -55,21 +55,13 @@ from gensim.matutils import Sparse2Corpus
 )
 
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 30 # トピックの数を事前に定義
-    """
-    tr_x1 = np.loadtxt( "../make_synthetic_data/k10tr_w.txt" , dtype=float)
-    tr_x2 = np.loadtxt( "../make_synthetic_data/k10tr_f.txt" , dtype=float)
-    tr_label = np.loadtxt( "../make_synthetic_data/k10tr_label.txt" , dtype=np.int32)
-    te_x1 = np.loadtxt( "../make_synthetic_data/k10te_w.txt" , dtype=float)
-    te_x2 = np.loadtxt( "../make_synthetic_data/k10te_w.txt" , dtype=float)
-    te_label = np.loadtxt( "../make_synthetic_data/k10te_z.txt" , dtype=np.int32)
-    """
-    tr_x1 = np.loadtxt( "../make_synthetic_data/k30tr_w.txt" , dtype=float)
-    tr_x2 = np.loadtxt( "../make_synthetic_data/k30tr_f.txt" , dtype=float)
-    tr_label = np.loadtxt( "../make_synthetic_data/k30tr_z.txt" , dtype=np.int32)
-    te_x1 = np.loadtxt( "../make_synthetic_data/k30te_w.txt" , dtype=float)
-    te_x2 = np.loadtxt( "../make_synthetic_data/k30te_f.txt" , dtype=float)
-    te_label = np.loadtxt( "../make_synthetic_data/k30te_z.txt" , dtype=np.int32)
+    define_topic = 5 # トピックの数を事前に定義
+    tr_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_w.txt" , dtype=float)
+    tr_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_f.txt" , dtype=float)
+    #tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)
+    te_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_w.txt" , dtype=float)
+    te_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_f.txt" , dtype=float)
+    #te_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_z.txt" , dtype=np.int32)
     """
     データセットの読み込み
     BoFヒストグラムの作成

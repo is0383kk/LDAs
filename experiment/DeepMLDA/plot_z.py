@@ -16,23 +16,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
 
-define_topic = 30 # トピックの数を事前に定義
-
-"""
-tr_x1 = np.loadtxt( "../make_synthetic_data/k10tr_w.txt" , dtype=float)
-tr_x2 = np.loadtxt( "../make_synthetic_data/k10tr_f.txt" , dtype=float)
-tr_label = np.loadtxt( "../make_synthetic_data/k10tr_label.txt" , dtype=np.int32)
-te_x1 = np.loadtxt( "../make_synthetic_data/k10te_w.txt" , dtype=float)
-te_x2 = np.loadtxt( "../make_synthetic_data/k10te_w.txt" , dtype=float)
-te_label = np.loadtxt( "../make_synthetic_data/k10te_z.txt" , dtype=np.int32)
-"""
-
-tr_x1 = np.loadtxt( "../make_synthetic_data/k30tr_w.txt" , dtype=float)
-tr_x2 = np.loadtxt( "../make_synthetic_data/k30tr_f.txt" , dtype=float)
-tr_label = np.loadtxt( "../make_synthetic_data/k30tr_z.txt" , dtype=np.int32)
-te_x1 = np.loadtxt( "../make_synthetic_data/k30te_w.txt" , dtype=float)
-te_x2 = np.loadtxt( "../make_synthetic_data/k30te_f.txt" , dtype=float)
-te_label = np.loadtxt( "../make_synthetic_data/k30te_z.txt" , dtype=np.int32)
+define_topic = 5 # トピックの数を事前に定義
+tr_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_w.txt" , dtype=float)
+tr_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_f.txt" , dtype=float)
+tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)
+te_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_w.txt" , dtype=float)
+te_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_f.txt" , dtype=float)
+te_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_z.txt" , dtype=np.int32)
 
 model = MAVITM(
 topics=define_topic,
@@ -62,26 +52,26 @@ crossmodal_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(
 
 print(f"autoencoder->{model}")
 
-train_batch = 1000
-test_batch = 1000
-crossmodal_batch = 1000
+batch = 1000
+
 
 trainloader = DataLoader(
     ds_tr,
-    batch_size=train_batch,
+    batch_size=batch,
 )
 
 testloader = DataLoader(
     ds_te,
-    batch_size=test_batch,
+    batch_size=batch,
 )
 
 crossmodalloader = DataLoader(
     crossmodal_te,
-    batch_size=crossmodal_batch,
+    batch_size=batch,
 )
 # 潜在変数の可視化
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 from random import random
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -103,38 +93,40 @@ elif define_topic == 20:
 elif define_topic == 30:
     colors = ["red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf',"red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf',"red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf']
 
-def visualize_zs_train(zs, labels):
+def visualize_zs(zs, labels, mode, ari):
     #plt.figure(figsize=(10,10))
     fig = plt.figure(figsize=(10,10))
     #ax = Axes3D(fig)
-    points = TSNE(n_components=2, random_state=0).fit_transform(zs)
+    points = PCA(n_components=2, random_state=0).fit_transform(zs)
     for p, l in zip(points, labels):
-        plt.title("Latent space (Topic:"+str(define_topic)+", Doc:"+str(train_batch), fontsize=24)
+        plt.title(f"Latent space(PCA):Top:{str(define_topic)}, Doc:{str(batch)}, ARI:{ari}", fontsize=22)
         plt.xlabel("Latent space:xlabel", fontsize=21)
         plt.ylabel("Latent space:ylabel", fontsize=21)
         plt.tick_params(labelsize=17)
         plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
         #ax.scatter(p[0], p[1], p[2], marker="${}$".format(l),c=colors[l])
-    plt.savefig('./sample_z/'+'TEST'+'k'+str(define_topic)+'d'+str(te_x1.shape[0])+'.png')
+    plt.savefig(f'./sample_z/{mode}k{str(define_topic)}d{str(te_x1.shape[0])}ari{int(ari*100)}.png')
 
-def visualize_zs_test(zs, labels):
-    #plt.figure(figsize=(10,10))
-    fig = plt.figure(figsize=(10,10))
-    #ax = Axes3D(fig)
-    points = TSNE(n_components=2, random_state=0).fit_transform(zs)
-    for p, l in zip(points, labels):
-        plt.title("Latent space (Topic:"+str(define_topic)+", Doc:"+str(test_batch)+", Words:"+str(te_x1.shape[1])+")", fontsize=24)
-        plt.xlabel("Latent space:xlabel", fontsize=21)
-        plt.ylabel("Latent space:ylabel", fontsize=21)
-        plt.tick_params(labelsize=17)
-        plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
-        #ax.scatter(p[0], p[1], p[2], marker="${}$".format(l),c=colors[l])
-    plt.savefig('./sample_z/'+'TEST'+'k'+str(define_topic)+'v'+str(te_x1.shape[1])+'d'+str(test_batch)+'.png')
+for x,t in enumerate(trainloader):
+    print("***********Joint multi-modal inference***********")
+    #print(f"te_x1 ->{t[0]}")
+    #print(f"te_x1 ->{t[1]}")
+    mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0], t[1])
+    tr_z = z_hoge.cpu()
+    tr_label = t[2].cpu()
+    #print(f"te_label->{te_label}")
+    predict_tr_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
+    #print(f"tr_label->{predict_tr_label}")
+    #print(f"predict_train_label->{predict_train_label}")
+    tr_ari = adjusted_rand_score(tr_label,predict_tr_label)
+    print(f"Joint:ARI->{tr_ari}")
+    visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN", tr_ari)
+    break
 
 for x,t in enumerate(testloader):
     print("***********Joint multi-modal inference***********")
-    print(f"te_x1 ->{t[0]}")
-    print(f"te_x1 ->{t[1]}")
+    #print(f"te_x1 ->{t[0]}")
+    #print(f"te_x1 ->{t[1]}")
     mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0], t[1])
     te_z = z_hoge.cpu()
     te_label = t[2].cpu()
@@ -144,7 +136,7 @@ for x,t in enumerate(testloader):
     #print(f"predict_train_label->{predict_train_label}")
     te_ari = adjusted_rand_score(te_label,predict_te_label)
     print(f"Joint:ARI->{te_ari}")
-    visualize_zs_train(te_z.detach().numpy(), te_label.detach().numpy())
+    visualize_zs(te_z.detach().numpy(), te_label.detach().numpy(), "TEST", te_ari)
     break
 
 """

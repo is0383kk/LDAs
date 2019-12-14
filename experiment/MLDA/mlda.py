@@ -234,14 +234,14 @@ def main():
     topic = 5
     data = []
     label = []
-    data.append( np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/k5te_w.txt" , dtype=np.int32) )
-    data.append( np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/k5te_f.txt" , dtype=np.int32) )
-    label.append(np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/k5te_z.txt" , dtype=np.int32))
+    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_w.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_f.txt" , dtype=np.int32) )
+    label.append(np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_z.txt" , dtype=np.int32))
     #for i in range(30):
-    #mlda( data, label , topic, 100, "learn_result" )
+    mlda( data, label , topic, 100, "learn_result" )
 
     #data[1] = None
-    mlda( data, label , topic, 20, "recog_result" , "learn_result" )
+    #mlda( data, label , topic, 20, "recog_result" , "learn_result" )
 
 
 if __name__ == '__main__':
