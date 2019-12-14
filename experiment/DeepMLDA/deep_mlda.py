@@ -55,26 +55,34 @@ from gensim.matutils import Sparse2Corpus
 )
 
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 3 # トピックの数を事前に定義
-    x1_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_train.txt" , dtype=float)
-    x2_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_train2.txt" , dtype=float)
-    x1_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_train_label.txt" , dtype=np.int32)
-    x2_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_train_label2.txt" , dtype=np.int32)
-    test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_test.txt" , dtype=float)
-    test_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/3k_test_label.txt" , dtype=np.int32)
+    define_topic = 30 # トピックの数を事前に定義
+    """
+    tr_x1 = np.loadtxt( "../make_synthetic_data/k10tr_w.txt" , dtype=float)
+    tr_x2 = np.loadtxt( "../make_synthetic_data/k10tr_f.txt" , dtype=float)
+    tr_label = np.loadtxt( "../make_synthetic_data/k10tr_label.txt" , dtype=np.int32)
+    te_x1 = np.loadtxt( "../make_synthetic_data/k10te_w.txt" , dtype=float)
+    te_x2 = np.loadtxt( "../make_synthetic_data/k10te_w.txt" , dtype=float)
+    te_label = np.loadtxt( "../make_synthetic_data/k10te_z.txt" , dtype=np.int32)
+    """
+    tr_x1 = np.loadtxt( "../make_synthetic_data/k30tr_w.txt" , dtype=float)
+    tr_x2 = np.loadtxt( "../make_synthetic_data/k30tr_f.txt" , dtype=float)
+    tr_label = np.loadtxt( "../make_synthetic_data/k30tr_z.txt" , dtype=np.int32)
+    te_x1 = np.loadtxt( "../make_synthetic_data/k30te_w.txt" , dtype=float)
+    te_x2 = np.loadtxt( "../make_synthetic_data/k30te_f.txt" , dtype=float)
+    te_label = np.loadtxt( "../make_synthetic_data/k30te_z.txt" , dtype=np.int32)
     """
     データセットの読み込み
     BoFヒストグラムの作成
     """
     #print("作成したヒストグラム->\n"+str(hist))
-    print("hist.shape->{}".format(x1_hist.shape))
-    print("全単語数{}".format(x1_hist.shape[0]*x1_hist.shape[1]))
+    print("hist.shape->{}".format(tr_x1.shape))
+    print("全単語数{}".format(tr_x1.shape[0]*tr_x1.shape[1]))
     #print("len(hist)->",len(hist[0]))
     x1_vocab = {}
     x2_vocab = {}
-    for i in range(len(x1_hist[0])):
+    for i in range(len(tr_x1[0])):
         x1_vocab["ID"+str(i)] = i
-    for i in range(len(x2_hist[0])):
+    for i in range(len(tr_x2[0])):
         x2_vocab["ID"+str(i)] = i
     #print("vocab->",vocab)
 
@@ -90,21 +98,22 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     x1_indexed_vocab = [x1_reverse_vocab[index] for index in range(len(x1_reverse_vocab))]
     x2_reverse_vocab = {x2_vocab[word]: word for word in x2_vocab}
     x2_indexed_vocab = [x2_reverse_vocab[index] for index in range(len(x2_reverse_vocab))]
-    ds_train = TensorDataset(torch.from_numpy(x1_hist).float(),torch.from_numpy(x2_hist).float())
-    ds_val = TensorDataset(torch.from_numpy(x1_hist).float(),torch.from_numpy(x2_hist).float())
+    ds_tr = TensorDataset(torch.from_numpy(tr_x1).float(),torch.from_numpy(tr_x2).float())
+    ds_te = TensorDataset(torch.from_numpy(te_x1).float(),torch.from_numpy(tr_x2).float())
 
     writer = SummaryWriter()
     model = MAVITM(
     topics=define_topic,
-    joint_input = len(x1_hist[0])+len(x2_hist[0]),
-    input_x1=len(x1_hist[0]),
-    input_x2=len(x2_hist[0]),
+    joint_input = len(tr_x1[0])+len(tr_x2[0]),
+    input_x1=len(tr_x1[0]),
+    input_x2=len(tr_x2[0]),
     hidden1_dimension=100,
     hidden2_dimension=100,
     )
     print(model)
     print('Training stage.')
-    ae_optimizer = Adam(model.parameters(), 0.001, betas=(0.99, 0.999))
+    ae_optimizer = Adam(model.parameters(), 0.001, betas=(0.99, 0.999)) # 最適化アルゴリズム
+
     def training_callback(autoencoder, epoch, lr, loss, perplexity):
         writer.add_scalars('data/autoencoder', {
             'lr': lr,
@@ -117,16 +126,16 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
             for topic in decoder_weight.topk(top_words, dim=0)[1].t()
         ]
     train(
-        ds_train,
+        ds_tr,
+        define_topic,
         model,
         cuda=cuda,
-        validation=ds_val,
+        validation=ds_te,
         epochs=epochs,
         batch_size=batch_size,
         optimizer=ae_optimizer,
-        update_callback=training_callback
-    )
-    print('Evaluation stage.')
+        update_callback=training_callback)
+    #print('Evaluation stage.')
     """
 
     train_batch = 32

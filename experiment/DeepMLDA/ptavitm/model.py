@@ -9,6 +9,7 @@ import time
 
 
 def train(dataset: torch.utils.data.Dataset,
+          num_topics: int,
           autoencoder: torch.nn.Module,
           epochs: int,
           batch_size: int,
@@ -22,7 +23,8 @@ def train(dataset: torch.utils.data.Dataset,
           update_freq: Optional[int] = 1,
           update_callback: Optional[Callable[[float, float], None]] = None,
           epoch_callback: Optional[Callable[[int, torch.nn.Module], None]] = None,
-          num_workers: int = 0) -> None:
+          num_workers: int = 0,
+          ) -> None:
     """
     Function to train an autoencoder using the provided dataset.
 
@@ -100,7 +102,7 @@ def train(dataset: torch.utils.data.Dataset,
             #kl_x1_x2 = autoencoder.kl_x1_x2(mean, logvar, x1_mean, x1_logvar, x2_mean, x2_logvar).mean()
             #print(f'jmvae_zero_loss -> {jmvae_zero_loss}')
             #print(f'kl_x1_x2 -> {kl_x1_x2}')
-            #loss = autoencoder.jmvae_kl_loss(jmvae_zero_loss, kl_x1_x2, 10)
+            #loss = autoencoder.jmvae_kl_loss(jmvae_zero_loss, kl_x1_x2, 1.0)
             #loss = jmvae_zero_loss
             loss = autoencoder.telbo(x1_batch, x2_batch, mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon,x2_mean ,x2_logvar, 1.0, 1.0, 1.0).mean()
             loss_value = float(loss.mean().item())
@@ -145,46 +147,29 @@ def train(dataset: torch.utils.data.Dataset,
         elapsed_time = t2-t1
         print("実行時間",elapsed_time)
         #lossの可視化
-        #print("loss_value",loss_value)
-        #print("average_loss",average_loss)
         plt_loss_list.append(average_loss)
         plt_perplexity.append(perplexity_value)
-    #print("losses->{}".format(len(plt_loss_list)))
-    #print("losses->{}".format(plt_loss_list))
-    #plt_loss_list = np.array(plt_loss_list)
-    #perplexity_edit = np.exp(plt_loss_list[:] / 60)
-    #print(perplexity_edit)
-    #print(plt_loss_list)
-    fig, (axL, axR) = plt.subplots(ncols=2, figsize=(18,9))
 
     np.save('./runs/loss_list.npy', np.array(plt_loss_list))
     np.save('./runs/perplexity.npy', np.array(plt_perplexity))
     plt_loss_list = np.load('./runs/loss_list.npy')
     plt_perplexity = np.load('./runs/perplexity.npy')
+    plt.figure(figsize=(13,9))
+    plt.tick_params(labelsize=18)
+    plt.title('Amortized MLDA(Topic='+ str(num_topics) +'):Log likelihood',fontsize=24)
+    plt.xlabel('Epoch',fontsize=24)
+    plt.ylabel('Log likelihood',fontsize=24)
+    plt.plot(plt_epoch_list,plt_loss_list)
 
-    axL.plot(plt_epoch_list,plt_loss_list)
-    axL.set_title('loss',fontsize=23)
-    axL.set_xlabel('epoch',fontsize=23)
-    axL.set_ylabel('loss',fontsize=23)
-    axL.tick_params(labelsize=18)
-    axL.grid(True)
-
-
-    axR.plot(plt_epoch_list,plt_perplexity)
-    axR.set_title('perplexity',fontsize=23)
-    axR.set_xlabel('epoch',fontsize=23)
-    axR.set_ylabel('perplexity',fontsize=23)
-    axR.tick_params(labelsize=18)
-    axR.grid(True)
-
-    fig.savefig('lp.png')
+    plt.savefig('liks.png')
     torch.save(autoencoder.state_dict(), 'deepmlda.pth')
 
 def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda: bool = False, silent: bool = False):
     model.eval()
     data_iterator = tqdm(loader, leave=False, unit='batch', disable=silent)
     losses = []
-    counts = []
+    x1_counts = []
+    x2_counts = []
     for index, batch in enumerate(data_iterator):
         x1_batch = batch[0]
         x2_batch = batch[1]
@@ -194,8 +179,12 @@ def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda
         mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(x1_batch, x2_batch)
         #print(f'jmvae_zero_loss -> {jmvae_zero_loss}')
         #print(f'kl_x1_x2 -> {kl_x1_x2}')
-        losses.append(model.jmvae_zero_loss(x1_batch, x2_batch, mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar).detach().cpu())
-        counts.append(x1_batch.sum(1).detach().cpu())
+        #losses.append(model.jmvae_zero_loss(x1_batch, x2_batch, mean, logvar, x1_recon, x1_mean, x1_logvar, x2_recon, x2_mean, x2_logvar).detach().cpu())
+        losses.append(model.telbo(x1_batch, x2_batch, mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon,x2_mean ,x2_logvar, 1.0, 1.0, 1.0).detach().cpu())
+        x1_counts.append(x1_batch.sum(1).detach().cpu())
+        x2_counts.append(x2_batch.sum(1).detach().cpu())
+        x1_pxp = float((torch.cat(losses) / torch.cat(x1_counts)).mean().exp().item())
+        x2_pxp = float((torch.cat(losses) / torch.cat(x2_counts)).mean().exp().item())
         #print("torch.cat(counts)",torch.cat(counts))
         #print("len(counts)",len(counts))
         #print("torch.cat(losses)",torch.cat(losses))
@@ -203,7 +192,7 @@ def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, cuda
         #print("losses",losses)
         #print("(torch.cat(losses) / torch.cat(counts)).mean()",(torch.cat(losses) / torch.cat(counts)).mean())
         #print("(torch.cat(losses) / torch.cat(counts)).mean()",(torch.cat(losses) / torch.cat(counts)).mean().exp().item())
-    return float((torch.cat(losses) / torch.cat(counts)).mean().exp().item())
+    return x1_pxp
 
 def predict(dataset: torch.utils.data.Dataset,
             model: torch.nn.Module,

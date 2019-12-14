@@ -101,17 +101,17 @@ class MAVITM(nn.Module):
         """Define Inference Network and Generator """
         """注意：上の関数で作成"""
         # Inference net q(z|x1,x2)
-        self.inference = joint_encoder(joint_input, hidden1_dimension, hidden2_dimension, encoder_noise)
-        self.mean = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
-        self.logvar = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
-        # Inference net q(z|x1)
+        self.inference = joint_encoder(joint_input, 150, 150, encoder_noise)
+        self.mean = hidden(150, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.logvar = hidden(150, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        # Inference net q(z|x1) & Generator p(x1|z)
         self.inference_x1 = encoder(input_x1, hidden1_dimension, hidden2_dimension, encoder_noise)
         self.x1_mean = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
         self.x1_logvar = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
         self.x1_generator = decoder(
             input_x1, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
-        # Inference net q(z|x2)
+        # Inference net q(z|x2) & Generator p(x2|z)
         self.inference_x2 = encoder(input_x2, hidden1_dimension, hidden2_dimension, encoder_noise)
         self.x2_mean = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
         self.x2_logvar = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
@@ -119,7 +119,7 @@ class MAVITM(nn.Module):
             input_x2, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
         # 事前分布のパラメータを定義
-        self.prior_mean, self.prior_var = map(nn.Parameter, prior(topics, 0.9))
+        self.prior_mean, self.prior_var = map(nn.Parameter, prior(topics, 0.995))
         self.prior_logvar = nn.Parameter(self.prior_var.log())
         self.prior_mean.requires_grad = False
         self.prior_var.requires_grad = False
@@ -177,7 +177,7 @@ class MAVITM(nn.Module):
 
     def inferenceX2(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        x1とx2用の推論ネットワーク
+        x2用の推論ネットワーク
         """
         encoded = self.inference_x2(batch)
         return encoded, self.x2_mean(encoded), self.x2_logvar(encoded)
@@ -207,6 +207,7 @@ class MAVITM(nn.Module):
         z_hoge = self.sample_z(mean, logvar)
         return mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge
 
+
     def telbo(self,
              x1_batch: torch.Tensor,
              x2_batch: torch.Tensor,
@@ -220,9 +221,9 @@ class MAVITM(nn.Module):
              x2_recon: torch.Tensor,
              x2_mean: torch.Tensor,
              x2_logvar: torch.Tensor,
-             a: float,
-             b: float,
-             c: float,
+             lambda_x1x2: float,
+             lambda_x1: float,
+             lambda_x2: float,
              ) -> torch.Tensor:
         jmvae_x1_rl = -(x1_batch * (jmvae_x1_recon + 1e-10).log()).sum(1)
         jmvae_x2_rl = -(x2_batch * (jmvae_x2_recon + 1e-10).log()).sum(1)
@@ -261,10 +262,10 @@ class MAVITM(nn.Module):
         x2_kld = 0.5 * ((x2_var_division + x2_diff_term + x2_logvar_division).sum(1) - self.topics)
         ##############################################################################################
         # JMVAE_loss, TELBO_lossの第１項
-        jmvae_zero_loss = (kld + jmvae_x1_rl + jmvae_x2_rl) # Equation (3) of paper of JMVAE
-        x1_elbo = x1_kld + x1_rl
-        x2_elbo = x2_kld + x2_rl
-        return a * jmvae_zero_loss + b * x1_elbo + c * x2_elbo
+        jmvae_zero_loss = kld + lambda_x1x2 * (jmvae_x1_rl + jmvae_x2_rl) # Equation (3) of paper of JMVAE
+        x1_elbo = x1_kld + lambda_x1 * x1_rl
+        x2_elbo = x2_kld + lambda_x2 * x2_rl
+        return jmvae_zero_loss + x1_elbo + x2_elbo
 
     def jmvae_zero_loss(self,
              x1_batch: torch.Tensor,
@@ -346,64 +347,4 @@ class MAVITM(nn.Module):
              alpha: float,
              ) -> torch.Tensor:
         loss = jmvae_zero_loss + (alpha * kl_x1_x2)
-        return loss
-
-    def jmvae_loss(self,
-             x1_batch: torch.Tensor,
-             x2_batch: torch.Tensor,
-             mean: torch.Tensor,
-             logvar: torch.Tensor,
-             x1_recon: torch.Tensor,
-             x1_mean: torch.Tensor,
-             x1_logvar: torch.Tensor,
-             x2_recon: torch.Tensor,
-             x2_mean: torch.Tensor,
-             x2_logvar: torch.Tensor,
-             ) -> torch.Tensor:
-        """
-        https://arxiv.org/pdf/1611.01891.pdf
-        This is MAVITM's loss function based on JMVAE(zero)
-        JMVAEに基づいて目的関数を定義
-        """
-        x1_rl = -(x1_batch * (x1_recon + 1e-10).log()).sum(1)
-        x2_rl = -(x2_batch * (x2_recon + 1e-10).log()).sum(1)
-        ##############################################################################################
-        # 同時分布と事前分布とのKL計算
-        prior_mean = self.prior_mean.expand_as(mean)
-        prior_var = self.prior_var.expand_as(logvar)
-        prior_logvar = self.prior_logvar.expand_as(logvar)
-        var_division = logvar.exp() / prior_var # Σ_0 / Σ_1
-        diff = mean - prior_mean # μ_１ - μ_0
-        diff_term = diff *diff / prior_var # (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1
-        logvar_division = prior_logvar - logvar # log|Σ_1| - log|Σ_0| = log(|Σ_1|/|Σ_2|)
-        # KL
-        kld = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
-        ##############################################################################################
-        # JMVAE_loss
-        jmvae_zero_loss = (kld + x1_rl + x2_rl) # Equation (3) of paper
-        ##############################################################################################
-        """
-        https://arxiv.org/pdf/1611.01891.pdf
-        """
-        # q(z|x1,x2) and q(z|x1)
-        x1_var_division = logvar.exp() / x1_logvar.exp()
-        x1_diff = mean - x1_mean
-        x1_diff_term = x1_diff *x1_diff / x1_logvar.exp()
-        x1_logvar_division = x1_logvar - logvar
-        # KL q(z|x1,x2) and q(z|x1)
-        x1_kld = 0.5 * ((x1_var_division + x1_diff_term + x1_logvar_division).sum(1) - self.topics)
-        ##############################################################################################
-        # q(z|x1,x2) and q(z|x2)
-        x2_var_division = logvar.exp() / x2_logvar.exp()
-        x2_diff = mean - x2_mean
-        x2_diff_term = x2_diff *x2_diff / x2_logvar.exp()
-        x2_logvar_division = x2_logvar - logvar
-        # KL q(z|x1,x2) and q(z|x2)
-        x2_kld = 0.5 * ((x2_var_division + x2_diff_term + x2_logvar_division).sum(1) - self.topics)
-        ##############################################################################################
-        alpha = 0.1
-        loss = jmvae_zero_loss - alpha * (x1_kld + x2_kld) # Equation (4) of paper
-        #print(f"x1_kld -> {x1_kld}")
-        #print(f"x2_kld -> {x2_kld}")
-        #print(f"x1_kld + x2_kld -> {x1_kld + x2_kld}")
         return loss

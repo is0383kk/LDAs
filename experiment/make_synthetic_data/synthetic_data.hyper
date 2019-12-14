@@ -1,6 +1,6 @@
-TOPIC_N:3
+TOPIC_N:5
 VOCABULARY_SIZE:50
 DOC_NUM:3000
 TERM_PER_DOC:50
-alpha:1.0
-beta:1.0
+alpha:0.1
+beta:0.1

@@ -6,7 +6,7 @@ import sys
 import click
 
 @click.command()
-@click.option('--topic_n', help = 'トピック数', type=int, default = 3)
+@click.option('--topic_n', help = 'トピック数', type=int, default = 5)
 @click.option('--vacabulary_size', help = '単語数', type=int, default = 50)
 @click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 3000)
 @click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 50)
@@ -30,8 +30,8 @@ def main(topic_n,
 	TERM_PER_DOC = term_per_doc # ドキュメントごとの単語数
 	MODE = mode
 
-	beta = [1.0 for i in range(VOCABULARY_SIZE)] # ディレクレ分布のパラメータ(グラフィカルモデル右端)
-	alpha = [1.0 for i in range(TOPIC_N)] # #ディレクレ分布のパラメータ(グラフィカルモデル左端)
+	beta = [0.1 for i in range(VOCABULARY_SIZE)] # ディレクレ分布のパラメータ(グラフィカルモデル右端)
+	alpha = [0.1 for i in range(TOPIC_N)] # #ディレクレ分布のパラメータ(グラフィカルモデル左端)
 
 
 	#print("alpha->",alpha)
