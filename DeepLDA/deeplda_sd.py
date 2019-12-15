@@ -11,9 +11,16 @@ from tensorboardX import SummaryWriter
 import pickle
 # DeepLDA用の訓練用関数とvaeモデル
 from ptavitm.model import train
-from ptavitm.vae import ProdLDA
+#from ptavitm.vae import ProdLDA
+from ptavitm.vae_tanh import ProdLDA
 # データローダ
 from torch.utils.data import DataLoader
+from ptavitm.utils import CountTensorDataset
+import math
+# Coherenceモデル
+from gensim.corpora.dictionary import Dictionary
+from gensim.models.coherencemodel import CoherenceModel
+from gensim.matutils import Sparse2Corpus
 
 
 """
@@ -24,11 +31,11 @@ from torch.utils.data import DataLoader
     '--cuda',
     help='CUDAを使用するかどうか (default False).',
     type=bool,
-    default=True
+    default=False
 )
 @click.option(
     '--batch-size',
-    help='バッチサイズ (default 200).',
+    help='バッチサイズ(文書数/batch_size ).',
     type=int,
     default=32
 )
@@ -36,13 +43,13 @@ from torch.utils.data import DataLoader
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=50
+    default=100
 )
 @click.option(
     '--top-words',
     help='各トピックにおいて表示するトップ単語の数 (default 12).',
     type=int,
-    default=5
+    default=32
 )
 @click.option(
     '--testing-mode',
@@ -51,17 +58,20 @@ from torch.utils.data import DataLoader
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    t1 = time.time() # 処理前の時刻
     define_topic = 3 # トピックの数を事前に定義
-    hist = np.loadtxt( "/home/yoshiwo/workspace/study/LDAs/make_synthetic_data/hist.txt" , dtype=float)
-    label = np.loadtxt( "/home/yoshiwo/workspace/study/LDAs/make_synthetic_data/label.txt" , dtype=np.int32)
+    hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
+    label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
+    test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
+    test_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt" , dtype=np.int32)
+    tensor_tr = torch.from_numpy(hist).float()
     """
     データセットの読み込み
     BoFヒストグラムの作成
     """
-    print("作成したヒストグラム->\n"+str(hist))
+    #print("作成したヒストグラム->\n"+str(hist))
     print("hist.shape->{}".format(hist.shape))
-    print("len(hist)->",len(hist[0]))
+    print("全単語数{}".format(hist.shape[0]*hist.shape[1]))
+    #print("len(hist)->",len(hist[0]))
     vocab = {}
     for i in range(len(hist[0])):
         vocab["ID"+str(i)] = i
@@ -93,13 +103,19 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
             for topic in decoder_weight.topk(top_words, dim=0)[1].t()
         ]
 
+
+
     #################################################################################
-    ds_train = TensorDataset(torch.from_numpy(hist).float(),torch.from_numpy(label).int())
-    ds_val = TensorDataset(torch.from_numpy(hist).float(),torch.from_numpy(label).int())
+
+
+    ds_train = TensorDataset(torch.from_numpy(hist).float())
+    ds_val = TensorDataset(torch.from_numpy(test_hist).float())
+
+
     autoencoder = ProdLDA(
         in_dimension=len(hist[0]),# 入力,本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
-        hidden1_dimension=50, # 中間層
-        hidden2_dimension=50,
+        hidden1_dimension=100, # 中間層
+        hidden2_dimension=100,
         topics=define_topic
     )
     if cuda:
@@ -129,7 +145,6 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         [reverse_vocab[item.item()] for item in topic]
         for topic in decoder_weight.topk(top_words, dim=0)[1].t()
     ]
-
     """
     各トピックの単語をテキストファイルに保存
     """
@@ -146,104 +161,30 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
             metadata=indexed_vocab,
             tag='feature_embeddings',
         )
-
     writer.close()
-    t2 = time.time()
-    # 経過時間を表示
-    elapsed_time = t2-t1
-    print(f"経過時間：{elapsed_time}")
 
-    ##################メイン処理はここまで########################################################
     """
-    各文書の潜在変数を可視化してクラスタリング
+    Perplexityの計算
+    学習後のパラメータを用いてデータセット全てに対してPerplexityの計算を行う
     """
-    test_batch = 100
     dataloader = DataLoader(
-        ds_train,
-        batch_size=test_batch,
-    )
+        ds_val,
+        batch_size=test_hist.shape[0],
+        )
+    losses = []
+    counts = []
+    for index, batch in enumerate(dataloader):
+        batch = batch[0]
+        print(f"batch->{batch}")
+        recon, mean, logvar, z = autoencoder(batch)
+        losses.append(autoencoder.loss(batch, recon, mean, logvar).detach().cpu())
+        counts.append(batch.sum(1).detach().cpu())
+    #print(f"losses->{losses}\ncounts->{counts}")
+    losses = losses[0].clone()
+    counts = counts[0].clone()
+    avg = (losses / counts).mean()
+    print('The approximated perplexity is: ', math.exp(avg))
 
-
-    #print("decoder_weight->\n"+str(decoder_weight.t()))
-    #print("decoder_weight.shape->\n"+str(decoder_weight.t().shape))
-    #print("decoder_weight.topk->\n"+str(decoder_weight.topk(top_words, dim=0)[1].t()))
-
-    autoencoder.eval()
-
-    # 潜在変数の可視化
-    from sklearn.manifold import TSNE
-    from random import random
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
-
-    #prior_mean = torch.full((200,3),0.0000)
-    #prior_logvar = torch.full((200,3),-0.4055)
-    #eps = prior_mean.new().resize_as_(prior_mean).normal_(mean=0, std=1)
-    #prior_z = prior_mean + prior_logvar.exp().sqrt() * eps
-    #prior_z = prior_z.cpu()
-    #print("prior_z-.{}".format(prior_z))
-    from sklearn.metrics.cluster import adjusted_rand_score as ar
-
-    #colors = ["red", "green", "blue", "orange", "purple", "brown", "fuchsia", "grey", "olive", "lightblue"]
-    if define_topic == 2:
-        colors = ["red", "green", "blue"]
-    elif define_topic == 3:
-        colors = ["red", "green", "blue"]
-    elif define_topic == 4:
-        colors = ["red", "green", "blue", "orange"]
-    elif define_topic == 5:
-        colors = ["red", "green", "blue", "orange", "purple"]
-    elif define_topic == 10:
-        colors = ["red", "green", "blue", "orange", "purple", "yellow", "black", "cyan", '#a65628', '#f781bf']
-
-    def visualize_zs(zs, labels):
-        #plt.figure(figsize=(10,10))
-        fig = plt.figure(figsize=(10,10))
-        #ax = Axes3D(fig)
-        points = TSNE(n_components=2, random_state=0).fit_transform(zs)
-        for p, l in zip(points, labels):
-            plt.title("Latent space (Topic:"+str(define_topic)+", Doc:"+str(hist.shape[0])+", Words:"+str(hist.shape[1])+")", fontsize=24)
-            plt.xlabel("Latent space:xlabel", fontsize=21)
-            plt.ylabel("Latent space:ylabel", fontsize=21)
-            plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
-            #ax.scatter(p[0], p[1], p[2], marker="${}$".format(l),c=colors[l])
-        plt.savefig('./sample_z/'+'k'+str(define_topic)+'v'+str(hist.shape[1])+'d'+str(hist.shape[0])+'.png')
-        #plt.savefig('document_z3d.png')
-        #plt.show()
-
-    for x,t in enumerate(dataloader):
-        """
-        x:インデックス（使わない）
-        t[0]:文書
-        t[1]:人口データを元に付けた文書ラベル
-        """
-        #print("t[0]->",t[0])
-        #print("label->",t[1])
-        #print("autoencoder(t[0])->",autoencoder.encode(t[0]))
-        #print("autoencoder(t[0])->",autoencoder(t[0]))
-        #a, b, c = autoencoder.encode(Variable(t[0], volatile=True))
-        recon, mean, logvar, z = autoencoder(t[0]) # 訓練後の潜在変数の抽出
-
-        z = z.cpu()
-        z_label = t[1].cpu()
-
-        #z2_label = t[1].cpu()
-        #print("ARI->",ar(z_label.numpy(),z2_label.numpy()))
-
-        #print("autoencoder.decode(mean,logvar)->{}".format(autoencoder.decode(mean,logvar))) # batch x １文書中の単語数
-        #print("autoencoder.decode(mean,logvar)->{}".format(autoencoder.decode(mean,logvar).shape))
-        #print("mean->",mean)
-        #print("logvar->",logvar)
-        """
-        潜在変数zの確認
-        """
-        #print("z.shape->"+str(z.shape))
-        #print("len(z)->",str(len(z)))
-        #print("z->"+str(z))
-
-        #visualize_zs(prior_z.detach().numpy(), z_label.cpu().detach().numpy())
-        visualize_zs(z.detach().numpy(), z_label.cpu().detach().numpy())
-        break
 
 if __name__ == '__main__':
     main()

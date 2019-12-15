@@ -1,17 +1,20 @@
 from collections import OrderedDict
+
 import torch
 import torch.nn as nn
+
 from typing import Mapping, Optional, Tuple
 
 
 def prior(topics: int) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Prior for the model.
+
     :param topics: number of topics
     :return: mean and variance tensors
     """
     # ラプラス近似で正規分布に近似
-    a = torch.Tensor(1, topics).float().fill_(1.0) # 1 x 50 全て1.0
+    a = torch.Tensor(1, topics).float().fill_(0.9) # 1 x 50 全て1.0
     mean = a.log().t() - a.log().mean(1)
     # a.log().t()->(1 x 50 全て0.0)
     # a.log().mean
@@ -92,13 +95,13 @@ class ProdLDA(nn.Module):
         self.decoder = decoder(
             in_dimension, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
-        # 事前分布を定義,これらは学習しない.
+        # set the priors, do not learn them
         self.prior_mean, self.prior_var = map(nn.Parameter, prior(topics))
         self.prior_logvar = nn.Parameter(self.prior_var.log())
         self.prior_mean.requires_grad = False
         self.prior_var.requires_grad = False
         self.prior_logvar.requires_grad = False
-        # バッチノルム用の重み,これらは学習しない.1.0で初期化.https://git.io/fhtsY
+        # do not learn the batchnorm weight, setting it to 1 as in https://git.io/fhtsY
         for component in [self.mean, self.logvar, self.decoder]:
             component.batchnorm.weight.requires_grad = False
             component.batchnorm.weight.fill_(1.0)
@@ -115,12 +118,10 @@ class ProdLDA(nn.Module):
 
     def encode(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        テキスト用のエンコーダ
         平均と分散を算出
         """
         encoded = self.encoder(batch)
         #print("encoded->"+str(encoded))
-        #print("encoded->"+str(encoded)+".encoded.shape->"+str(encoded.shape))
         #print("mean->"+str(self.mean(encoded)))
         #print("logvar->"+str(self.logvar(encoded)))
 
@@ -129,7 +130,6 @@ class ProdLDA(nn.Module):
     def decode(self, mean: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
         # Same as _generator_network method in the original TensorFlow implementation at https://git.io/fhUJu
         """
-        テキスト用のデコーダ
         リパラメトリゼーショントリック
         """
         eps = mean.new().resize_as_(mean).normal_(mean=0, std=1)
@@ -137,22 +137,24 @@ class ProdLDA(nn.Module):
         #print("z.shape->"+str(z.shape))
         #print("len(z)->",str(len(z)))
         #print("z->"+str(z))
-        """
-        潜在変数zの形について
-        z-> tensor([バッチサイズ,トピック数])
-        """
         return self.decoder(z)
+
+    def sample_z(self,mean,logvar): # 独自で定義,潜在変数の可視化に必要
+        eps = mean.new().resize_as_(mean).normal_(mean=0, std=1)
+        return mean + logvar.exp().sqrt() * eps
 
     def forward(self, batch: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         _, mean, logvar = self.encode(batch)
         recon = self.decode(mean, logvar)
-        return recon, mean, logvar
+        z_hoge = self.sample_z(mean, logvar)
+        return recon, mean, logvar, z_hoge
 
     def loss(self,
              input_tensor: torch.Tensor,
              reconstructed_tensor: torch.Tensor,
              posterior_mean: torch.Tensor,
-             posterior_logvar: torch.Tensor) -> torch.Tensor:
+             posterior_logvar: torch.Tensor,
+             ) -> torch.Tensor:
         """
         Variational objective, see Section 3.3 of Akash Srivastava and Charles Sutton, 2017,
         https://arxiv.org/pdf/1703.01488.pdf; modified from https://github.com/hyqneuron/pytorch-avitm.
@@ -162,21 +164,36 @@ class ProdLDA(nn.Module):
         :param posterior_mean: posterior mean
         :param posterior_logvar: posterior log variance
         :return: unaveraged loss tensor
+
+        self.prior_mean.requires_grad = False
+        self.prior_var.requires_grad = False
+        self.prior_logvar.requires_grad = False
         """
         # TODO check this again against original paper and TF implementation by adding tests
         # https://github.com/akashgit/autoencoding_vi_for_topic_models/blob/master/models/prodlda.py
         # reconstruction loss
         # this is the second line in Eq. 7
+
         rl = -(input_tensor * (reconstructed_tensor + 1e-10).log()).sum(1)
         # KL divergence
         # this is the first line in Eq. 7
         prior_mean = self.prior_mean.expand_as(posterior_mean)
         prior_var = self.prior_var.expand_as(posterior_logvar)
         prior_logvar = self.prior_logvar.expand_as(posterior_logvar)
-        var_division = posterior_logvar.exp() / prior_var
-        diff = posterior_mean - prior_mean
-        diff_term = diff * diff / prior_var
-        logvar_division = prior_logvar - posterior_logvar
+        var_division = posterior_logvar.exp() / prior_var # Σ_0 / Σ_1
+
+        #print("posterior_mean->{}".format(posterior_mean))
+        #print("prior_mean->{}".format(prior_mean))
+        #print("posterior_var->{}".format(posterior_var))
+        #print("prior_logvar->{}".format(prior_logvar))
+        diff = posterior_mean - prior_mean # μ_１ - μ_0
+        diff_term = diff * diff / prior_var # (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1
+        logvar_division = prior_logvar - posterior_logvar # log|Σ_1| - log|Σ_0| = log(|Σ_1|/|Σ_2|)
+
         kld = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
-        #print((rl + kld).shape)
-        return rl + kld
+        """
+        KL = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
+           = 0.5 * {Σ_0 / Σ_1 + (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1 + log(|Σ_1|/|Σ_2|) -k}
+        """
+        loss = (rl + kld)
+        return loss

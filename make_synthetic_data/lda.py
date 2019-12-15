@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from scipy.sparse import load_npz
 import random
@@ -7,7 +8,7 @@ import matplotlib.pyplot as plt
 #ハイパーパラメータ
 __alpha = 0.9
 __beta = 0.01
-epoch_num = 100 # 学習エポック
+epoch_num = 30 # 学習エポック
 
 root = "./hist.txt"
 
@@ -203,12 +204,14 @@ def lda( data , K ):
     #print(topics_dn[3])
 
 def main():
+    t1 = time.time() # 処理前の時刻
     n = 100 # データの水増し用の変数
-    topic = 2 # トピック数を指定
+    topic = 20 # トピック数を指定
     #data = np.loadtxt( root , dtype=np.int32)*n # 発生回数にnをかけて水増し可能
     data = np.loadtxt( root , dtype=np.int32)
     #print(data)
     lda( data , topic )
+    t2 = time.time()
 
 if __name__ == '__main__':
     main()

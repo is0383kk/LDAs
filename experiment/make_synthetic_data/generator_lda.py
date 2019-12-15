@@ -44,7 +44,8 @@ def main(topic_n,
 	hist = np.zeros( (DOC_NUM, TERM_PER_DOC) ) # ヒストグラム格納用の変数
 	document_label = np.zeros(DOC_NUM) # 単語の潜在変数を元に文書ラベルを決定する変数
 	z_max = -1145141919810 # z_countと比較するための変数
-
+	tpd_t = int(TERM_PER_DOC / TOPIC_N) # 不正操作用の変数．単語生成確率を操作
+	prob = float(1 / tpd_t) # 不正操作用の変数．
 	#print(document_label[0])
 	#print(hist)
 	#print(hist[0])
@@ -53,16 +54,15 @@ def main(topic_n,
 	phi = []
 	topic = []
 	for i in range(TOPIC_N):
-		if (MODE == False):
-			beta = [0.1 for i in range(VOCABULARY_SIZE)]
-			#beta[0] = 10
-			topic = np.random.mtrand.dirichlet(beta, size = 1)
-			#print("topic->{}".format(topic))
+		if MODE == True:
+			topic = np.zeros(TERM_PER_DOC)
+			topic[i*tpd_t : tpd_t*(i+1)] = prob
+			phi.append(topic)
 		else:
 			topic = np.random.mtrand.dirichlet(beta, size = 1)
-			#print("topic->{}".format(topic))
-
-		phi.append(topic)
+			phi.append(topic)
+	print(f"phi->{phi}")
+	
 
 	
 	# 各ファイル変数
@@ -117,7 +117,12 @@ def main(topic_n,
 				z_buffer[z_assignment] = 0
 			z_buffer[z_assignment] = z_buffer[z_assignment] + 1
 			# トピックzからサンプリングされる観測w
-			w = np.random.multinomial(1,phi[z_assignment][0],size = 1)
+			if MODE == True:
+				# 不正操作モード
+				w = np.random.multinomial(1,phi[z_assignment],size = 1)
+			else:
+				# 一様乱数モード
+				w = np.random.multinomial(1,phi[z_assignment][0],size = 1)
 			#print(f"phi[z_assignment] -> {phi[z_assignment]}")
 			#print(f"w -> {w[0]}")
 			w_assignment = 0
@@ -179,7 +184,7 @@ def main(topic_n,
 	z_f.close()
 	theta_f.close()
 	output_f.close()
-
+	"""
 	# phiを格納
 	output_f = open(FILE_NAME+'.phi','w')
 	for i in range(TOPIC_N):
@@ -198,9 +203,9 @@ def main(topic_n,
 	output_f.write('alpha:'+str(alpha[0])+'\n')
 	output_f.write('beta:'+str(beta[0])+'\n')
 	output_f.close()
+	"""
 	#print("label->{}".format(len(document_label)))
 	#print("label->{}".format(document_label))
-	print("\nremove_label->",remove_label)
 	if len(remove_label) != 0:
 		hist = np.delete(hist,remove_label,0)
 		document_label = np.delete(document_label,remove_label,0)
@@ -208,14 +213,15 @@ def main(topic_n,
 	#print("hist->{}".format(document_label))
 	#print("label->{}".format(document_label))
 	#print(document_label)
-	if test == True:
-		np.savetxt( "test_hist.txt", hist, fmt=str("%d") )
-		np.savetxt( "test_label.txt", document_label, fmt=str("%d") )
+	if test == False:
+		np.savetxt( "k"+str(topic_n)+"tr.txt", hist, fmt=str("%d") )
+		np.savetxt( "k"+str(topic_n)+"tr_label.txt", document_label, fmt=str("%d") )
 	else:
-		np.savetxt( "hist.txt", hist, fmt=str("%d") )
-		np.savetxt( "label.txt", document_label, fmt=str("%d") )
-	print("モード選択->{}".format(MODE))
-	print("データ選択->{}".format(test))
+		np.savetxt( "k"+str(topic_n)+"te.txt", hist, fmt=str("%d") )
+		np.savetxt( "k"+str(topic_n)+"te_label.txt", document_label, fmt=str("%d") )
+	print("トピックが重複している文書",remove_label)
+	print("不正操作モード選択->{}".format(MODE))
+	print("テストデータ生成->{}".format(test))
 
 if __name__ == "__main__":
 	main()
