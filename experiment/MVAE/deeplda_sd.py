@@ -32,7 +32,7 @@ import math
     '--batch-size',
     help='バッチサイズ(文書数/batch_size ).',
     type=int,
-    default=32
+    default=16
 )
 @click.option(
     '--epochs',
@@ -44,7 +44,7 @@ import math
     '--top-words',
     help='各トピックにおいて表示するトップ単語の数 (default 12).',
     type=int,
-    default=32
+    default=3
 )
 @click.option(
     '--testing-mode',
@@ -53,7 +53,7 @@ import math
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 5 # トピックの数を事前に定義
+    define_topic = 3 # トピックの数を事前に定義
     hist = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}trc.txt" , dtype=float)
     label = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}trc_label.txt" , dtype=np.int32)
     test_hist = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}tec.txt" , dtype=float)
@@ -123,9 +123,10 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     """
     print('Training stage.')
     ae_optimizer = Adam(autoencoder.parameters(), 0.001, betas=(0.99, 0.999))
-    """
+
     train(
         ds_train,
+        define_topic,
         autoencoder,
         cuda=cuda,
         validation=ds_val,
@@ -134,7 +135,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         optimizer=ae_optimizer,
         update_callback=training_callback
     )
-    """
+
     print('Evaluation stage.')
     """
     各トピックの単語をテキストファイルに保存
@@ -145,6 +146,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     Perplexityの計算
     学習後のパラメータを用いてデータセット全てに対してPerplexityの計算を行う
     """
+    """
     autoencoder.eval()
     dataloader = DataLoader(
         ds_train,
@@ -153,11 +155,11 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
     for index, batch in enumerate(dataloader):
         #print(f"batch->{batch[0][0][0]}")
         batch = batch[0]
-        print(f"batch->{batch}")
-        _, mean, logvar = autoencoder.encode(batch)
-        print(f"mean->{mean}")
-        print(f"logvar->{logvar}")
-
+        #print(f"batch->{batch}")
+        recon, mean, logvar, z_hoge = autoencoder(batch)
+        loss = autoencoder.loss(batch, recon, mean, logvar,define_topic)
+        print(f"loss->{loss}")
+    """
 
 if __name__ == '__main__':
     main()

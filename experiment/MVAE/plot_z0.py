@@ -6,24 +6,25 @@ import numpy as np
 
 import torch
 from torch.utils.data import TensorDataset
-from ptavitm.vae2 import ProdLDA
+from ptavitm.vae_tanh import ProdLDA
 # データローダ
 from torch.utils.data import DataLoader
 import time
 
 
-define_topic = 10 # トピックの数を事前に定義
-hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
-label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
-test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
-test_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt" , dtype=np.int32)
+define_topic = 3 # トピックの数を事前に定義
+hist = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}trc.txt" , dtype=float)
+label = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}trc_label.txt" , dtype=np.int32)
+test_hist = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}tec.txt" , dtype=float)
+test_label = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}tec_label.txt" , dtype=np.int32)
 
 autoencoder = ProdLDA(
     in_dimension=len(hist[0]),# 入力,本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
     hidden1_dimension=100, # 中間層
+    hidden2_dimension=100,
     topics=define_topic
 )
-autoencoder.load_state_dict(torch.load('./deeplda_nn2.pth'))
+autoencoder.load_state_dict(torch.load('deeplda.pth'))
 
 """
 vocab
@@ -40,7 +41,7 @@ ds_val = TensorDataset(torch.from_numpy(test_hist).float(),torch.from_numpy(test
 
 print("autoencoder->{}".format(autoencoder))
 
-test_batch = 150
+test_batch = 1000
 trainloader = DataLoader(
     ds_train,
     batch_size=test_batch,

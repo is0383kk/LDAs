@@ -5,25 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Mapping, Optional, Tuple
 
-
-def prior(topics: int) -> Tuple[torch.Tensor, torch.Tensor]:
-    """
-    Prior for the model.
-
-    :param topics: number of topics
-    :return: mean and variance tensors
-    """
-    # ラプラス近似で正規分布に近似
-    a = torch.Tensor(1, topics).float().fill_(0.95) # 1 x 50 全て1.0
-    mean = a.log().t() - a.log().mean(1)
-    # a.log().t()->(1 x 50 全て0.0)
-    # a.log().mean
-    var = ((1 - 2.0 / topics) * a.reciprocal()).t() + (1.0 / topics ** 2) * a.reciprocal().sum(1)
-    # mean->0: 1 x 50, var->0.9800: 1 x 50
-    # mean^T->0: 50 x 1, var^T->0.9800: 50 x 1
-    return mean.t(), var.t()
-
-
 def copy_embeddings_(tensor: torch.Tensor, lookup: Mapping[int, torch.Tensor]) -> None:
     """
     Helper function for mutating the weight of an initial linear embedding module using
@@ -60,8 +41,8 @@ def decoder(in_dimension: int,
     return nn.Sequential(OrderedDict([
         ('linear', nn.Linear(topics, in_dimension, bias=False)),
         ('batchnorm', nn.BatchNorm1d(in_dimension, affine=True, eps=eps, momentum=momentum)),
-        ('act', nn.Softmax(dim=1)),
-        ('dropout', nn.Dropout(decoder_noise))
+        ('act', nn.Softmax()),
+        ('dropout', nn.Dropout(decoder_noise)),
     ]))
 
 
@@ -95,12 +76,6 @@ class ProdLDA(nn.Module):
         self.decoder = decoder(
             in_dimension, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
-        # set the priors, do not learn them
-        self.prior_mean, self.prior_var = map(nn.Parameter, prior(topics))
-        self.prior_logvar = nn.Parameter(self.prior_var.log())
-        self.prior_mean.requires_grad = False
-        self.prior_var.requires_grad = False
-        self.prior_logvar.requires_grad = False
         # do not learn the batchnorm weight, setting it to 1 as in https://git.io/fhtsY
         for component in [self.mean, self.logvar, self.decoder]:
             component.batchnorm.weight.requires_grad = False
@@ -130,7 +105,6 @@ class ProdLDA(nn.Module):
         """
         eps = mean.new().resize_as_(mean).normal_(mean=0, std=1)
         z = mean + logvar.exp().sqrt() * eps
-        z = F.softmax(z,dim=1)
         return self.decoder(z)
 
     def sample_z(self,mean,logvar): # 独自で定義,潜在変数の可視化に必要
@@ -149,43 +123,26 @@ class ProdLDA(nn.Module):
              reconstructed_tensor: torch.Tensor,
              posterior_mean: torch.Tensor,
              posterior_logvar: torch.Tensor,
+             topic: int,
              ) -> torch.Tensor:
-        """
-        Variational objective, see Section 3.3 of Akash Srivastava and Charles Sutton, 2017,
-        https://arxiv.org/pdf/1703.01488.pdf; modified from https://github.com/hyqneuron/pytorch-avitm.
-
-        :param input_tensor: input batch to the network, shape [batch size, features]
-        :param reconstructed_tensor: reconstructed batch, shape [batch size, features]
-        :param posterior_mean: posterior mean
-        :param posterior_logvar: posterior log variance
-        :return: unaveraged loss tensor
-
-        self.prior_mean.requires_grad = False
-        self.prior_var.requires_grad = False
-        self.prior_logvar.requires_grad = False
-        """
-        # TODO check this again against original paper and TF implementation by adding tests
-        # https://github.com/akashgit/autoencoding_vi_for_topic_models/blob/master/models/prodlda.py
-        # reconstruction loss
-        # this is the second line in Eq. 7
-
+        prior_mean = torch.zeros((topic))
+        prior_var = torch.ones((topic))
+        prior_logvar = prior_var.log()
         rl = -(input_tensor * (reconstructed_tensor + 1e-10).log()).sum(1)
+        #print(f"input_tensor=>{input_tensor}")
+        #print(f"reconstructed_tensor=>{reconstructed_tensor}")
+        #print(f"recon_err=>{rl}")
         # KL divergence
         # this is the first line in Eq. 7
-        prior_mean = self.prior_mean.expand_as(posterior_mean)
-        prior_var = self.prior_var.expand_as(posterior_logvar)
-        prior_logvar = self.prior_logvar.expand_as(posterior_logvar)
+        #print(f"prior_mean->{prior_mean}")
+        #print(f"prior_mean->{prior_var}")
+        #print(f"prior_logvar->{prior_logvar}")
         var_division = posterior_logvar.exp() / prior_var # Σ_0 / Σ_1
-
-        #print("posterior_mean->{}".format(posterior_mean))
-        #print("prior_mean->{}".format(prior_mean))
-        #print("posterior_var->{}".format(posterior_var))
-        #print("prior_logvar->{}".format(prior_logvar))
         diff = posterior_mean - prior_mean # μ_１ - μ_0
         diff_term = diff * diff / prior_var # (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1
         logvar_division = prior_logvar - posterior_logvar # log|Σ_1| - log|Σ_0| = log(|Σ_1|/|Σ_2|)
-
         kld = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
+        print("kld",kld)
         """
         KL = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
            = 0.5 * {Σ_0 / Σ_1 + (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1 + log(|Σ_1|/|Σ_2|) -k}
