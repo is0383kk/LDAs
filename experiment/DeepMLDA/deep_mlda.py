@@ -53,9 +53,15 @@ from gensim.matutils import Sparse2Corpus
     type=bool,
     default=False
 )
+@click.option(
+    '--k',
+    help='トピック数を指定',
+    type=int,
+    default=3
+)
 
-def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 5 # トピックの数を事前に定義
+def main(cuda,batch_size,epochs,top_words,testing_mode,k):#上のコマンドライン引数
+    define_topic = k # トピックの数を事前に定義
     tr_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_w.txt" , dtype=float)
     tr_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_f.txt" , dtype=float)
     #tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)

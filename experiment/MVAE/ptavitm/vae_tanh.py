@@ -34,12 +34,12 @@ def encoder(in_dimension: int,
 
 
 def decoder(in_dimension: int,
-            topics: int,
+            z_dim: int,
             decoder_noise: float,
             eps: float,
             momentum: float) -> torch.nn.Module:
     return nn.Sequential(OrderedDict([
-        ('linear', nn.Linear(topics, in_dimension, bias=False)),
+        ('linear', nn.Linear(z_dim, in_dimension, bias=False)),
         ('batchnorm', nn.BatchNorm1d(in_dimension, affine=True, eps=eps, momentum=momentum)),
         ('act', nn.Softmax()),
         ('dropout', nn.Dropout(decoder_noise)),
@@ -47,12 +47,12 @@ def decoder(in_dimension: int,
 
 
 def hidden(hidden2_dimension: int,
-           topics: int,
+           z_dim: int,
            eps: float,
            momentum: float) -> torch.nn.Module:
     return nn.Sequential(OrderedDict([
-        ('linear', nn.Linear(hidden2_dimension, topics)),
-        ('batchnorm', nn.BatchNorm1d(topics, affine=True, eps=eps, momentum=momentum))
+        ('linear', nn.Linear(hidden2_dimension, z_dim)),
+        ('batchnorm', nn.BatchNorm1d(z_dim, affine=True, eps=eps, momentum=momentum))
     ]))
 
 
@@ -61,7 +61,7 @@ class ProdLDA(nn.Module):
                  in_dimension: int,
                  hidden1_dimension: int,
                  hidden2_dimension: int,
-                 topics: int,
+                 z_dim: int,
                  decoder_noise: float = 0.2,
                  encoder_noise: float = 0.2,
                  batchnorm_eps: float = 0.001,
@@ -69,12 +69,12 @@ class ProdLDA(nn.Module):
                  train_word_embeddings: bool = True,
                  word_embeddings: Optional[Mapping[int, torch.Tensor]] = None) -> None:
         super(ProdLDA, self).__init__()
-        self.topics = topics
+        self.z_dim = z_dim
         self.encoder = encoder(in_dimension, hidden1_dimension, hidden2_dimension, encoder_noise)
-        self.mean = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
-        self.logvar = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.mean = hidden(hidden2_dimension, z_dim, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.logvar = hidden(hidden2_dimension, z_dim, eps=batchnorm_eps, momentum=batchnorm_momentum)
         self.decoder = decoder(
-            in_dimension, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
+            in_dimension, z_dim, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
         # do not learn the batchnorm weight, setting it to 1 as in https://git.io/fhtsY
         for component in [self.mean, self.logvar, self.decoder]:
@@ -123,28 +123,28 @@ class ProdLDA(nn.Module):
              reconstructed_tensor: torch.Tensor,
              posterior_mean: torch.Tensor,
              posterior_logvar: torch.Tensor,
-             topic: int,
              ) -> torch.Tensor:
-        prior_mean = torch.zeros((topic))
-        prior_var = torch.ones((topic))
-        prior_logvar = prior_var.log()
-        rl = -(input_tensor * (reconstructed_tensor + 1e-10).log()).sum(1)
+        #rl = -(input_tensor * (reconstructed_tensor + 1e-10).log()).sum(1)
         #print(f"input_tensor=>{input_tensor}")
-        #print(f"reconstructed_tensor=>{reconstructed_tensor}")
+        #print(f"reconstructed_tensor=>{reconstructed_tensor.shape}")
+        rl = F.binary_cross_entropy(reconstructed_tensor, input_tensor, reduction='sum')
+        #print(f"input_tensor=>{input_tensor.shape}")
+        #print(f"reconstructed_tensor=>{reconstructed_tensor.shape}")
         #print(f"recon_err=>{rl}")
         # KL divergence
         # this is the first line in Eq. 7
         #print(f"prior_mean->{prior_mean}")
         #print(f"prior_mean->{prior_var}")
         #print(f"prior_logvar->{prior_logvar}")
-        var_division = posterior_logvar.exp() / prior_var # Σ_0 / Σ_1
-        diff = posterior_mean - prior_mean # μ_１ - μ_0
-        diff_term = diff * diff / prior_var # (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1
-        logvar_division = prior_logvar - posterior_logvar # log|Σ_1| - log|Σ_0| = log(|Σ_1|/|Σ_2|)
-        kld = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
-        print("kld",kld)
+        #var_division = posterior_logvar.exp() / prior_var # Σ_0 / Σ_1
+        #diff = posterior_mean - prior_mean # μ_１ - μ_0
+        #diff_term = diff * diff / prior_var # (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1
+        #logvar_division = prior_logvar - posterior_logvar # log|Σ_1| - log|Σ_0| = log(|Σ_1|/|Σ_2|)
+        #kld = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.z_dim)
+        kld = -0.5 * torch.sum(1 + posterior_logvar - posterior_mean.pow(2) - posterior_logvar.exp())
+        #print("kld",kld)
         """
-        KL = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.topics)
+        KL = 0.5 * ((var_division + diff_term + logvar_division).sum(1) - self.z_dim)
            = 0.5 * {Σ_0 / Σ_1 + (μ_1 - μ_0)(μ_1 - μ_0)/Σ_1 + log(|Σ_1|/|Σ_2|) -k}
         """
         loss = (rl + kld)

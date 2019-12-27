@@ -32,13 +32,13 @@ import math
     '--batch-size',
     help='バッチサイズ(文書数/batch_size ).',
     type=int,
-    default=16
+    default=32
 )
 @click.option(
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=100
+    default=500
 )
 @click.option(
     '--top-words',
@@ -54,6 +54,7 @@ import math
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
     define_topic = 3 # トピックの数を事前に定義
+    z_dim = 64
     hist = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}trc.txt" , dtype=float)
     label = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}trc_label.txt" , dtype=np.int32)
     test_hist = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}tec.txt" , dtype=float)
@@ -111,7 +112,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
         in_dimension=len(hist[0]),# 入力,本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
         hidden1_dimension=100, # 中間層
         hidden2_dimension=100,
-        topics=define_topic
+        z_dim = z_dim
     )
     if cuda:
         autoencoder.cuda()
@@ -126,7 +127,6 @@ def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドラ�
 
     train(
         ds_train,
-        define_topic,
         autoencoder,
         cuda=cuda,
         validation=ds_val,

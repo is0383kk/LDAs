@@ -6,7 +6,13 @@ import pickle
 import os
 import matplotlib.pyplot as plt
 import time
+import argparse
 from sklearn.metrics.cluster import adjusted_rand_score
+
+parser = argparse.ArgumentParser(description='MLDA')
+parser.add_argument('--k', type=int, default=3, metavar='K',
+                    help="トピック数を指定")
+args = parser.parse_args()
 
 # ハイパーパラメータ
 __alpha = 0.1
@@ -231,7 +237,7 @@ def mlda( data, label , K, num_itr=epoch_num, save_dir="model", load_dir=None ):
     #pylab.show()
 
 def main():
-    topic = 5
+    topic = args.k
     data = []
     label = []
     data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_w.txt" , dtype=np.int32) )
@@ -241,7 +247,7 @@ def main():
     mlda( data, label , topic, 100, "learn_result" )
 
     #data[1] = None
-    #mlda( data, label , topic, 20, "recog_result" , "learn_result" )
+    mlda( data, label , topic, 20, "recog_result" , "learn_result" )
 
 
 if __name__ == '__main__':

@@ -13,6 +13,7 @@ import time
 
 
 define_topic = 3 # トピックの数を事前に定義
+z_dim = 64
 hist = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}trc.txt" , dtype=float)
 label = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}trc_label.txt" , dtype=np.int32)
 test_hist = np.loadtxt( f"../make_synthetic_data/k{str(define_topic)}tec.txt" , dtype=float)
@@ -22,7 +23,7 @@ autoencoder = ProdLDA(
     in_dimension=len(hist[0]),# 入力,本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
     hidden1_dimension=100, # 中間層
     hidden2_dimension=100,
-    topics=define_topic
+    z_dim = z_dim
 )
 autoencoder.load_state_dict(torch.load('deeplda.pth'))
 

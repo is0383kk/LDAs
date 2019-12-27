@@ -1,5 +1,5 @@
-#実行時間の計測
-
+import time
+import argparse
 #メイン処理
 import glob
 import numpy as np
@@ -10,13 +10,17 @@ from torch.utils.data import TensorDataset
 from ptavitm.mavitm import MAVITM
 # データローダ
 from torch.utils.data import DataLoader
-import time
 # クラス推定
 import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
 
-define_topic = 5 # トピックの数を事前に定義
+parser = argparse.ArgumentParser(description='Plot latent variable:Amortized MLDA')
+parser.add_argument('--k', type=int, default=3, metavar='K',
+                    help="トピック数を指定")
+args = parser.parse_args()
+
+define_topic = args.k # トピックの数を事前に定義
 tr_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_w.txt" , dtype=float)
 tr_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_f.txt" , dtype=float)
 tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)

@@ -9,7 +9,6 @@ import time
 
 
 def train(dataset: torch.utils.data.Dataset,
-          define_topic: int,
           autoencoder: torch.nn.Module,
           epochs: int,
           batch_size: int,
@@ -95,7 +94,7 @@ def train(dataset: torch.utils.data.Dataset,
             else:
                 recon, mean, logvar, z = autoencoder(batch)
             # calculate the loss and backprop
-            loss = autoencoder.loss(batch, recon, mean, logvar, define_topic).mean()
+            loss = autoencoder.loss(batch, recon, mean, logvar).mean()
             loss_value = float(loss.mean().item())
             optimizer.zero_grad()
             loss.backward()
@@ -112,7 +111,7 @@ def train(dataset: torch.utils.data.Dataset,
             #print("len(losses)->",len(losses))
             if validation_loader is not None:
                 autoencoder.eval()
-                #perplexity_value = perplexity(validation_loader, autoencoder,define_topic, cuda, silent)
+                #perplexity_value = perplexity(validation_loader, autoencoder,z_dim, cuda, silent)
                 data_iterator.set_postfix(
                     epo=epoch,
                     lss='%.6f' % average_loss,
@@ -139,16 +138,17 @@ def train(dataset: torch.utils.data.Dataset,
         #print("average_loss",average_loss)
         plt_loss_list.append(average_loss)
         #plt_perplexity.append(perplexity_value)
-    #print("losses->{}".format(len(plt_loss_list)))
-    #print("losses->{}".format(plt_loss_list))
-    #plt_loss_list = np.array(plt_loss_list)
-    #perplexity_edit = np.exp(plt_loss_list[:] / 60)
-    #print(perplexity_edit)
-    #print(plt_loss_list)
-    #fig.savefig('lp.png')
+    plt.figure(figsize=(13,9))
+    plt.tick_params(labelsize=18)
+    plt.title('VAE:Log likelihood',fontsize=24)
+    plt.xlabel('Epoch',fontsize=24)
+    plt.ylabel('Log likelihood',fontsize=24)
+    plt.plot(plt_epoch_list,plt_loss_list)
+
+    plt.savefig('liks.png')
     torch.save(autoencoder.state_dict(), 'deeplda.pth')
 
-def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, define_topic, cuda: bool = False, silent: bool = False):
+def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, z_dim, cuda: bool = False, silent: bool = False):
     model.eval()
     data_iterator = tqdm(loader, leave=False, unit='batch', disable=silent)
     losses = []
@@ -158,7 +158,7 @@ def perplexity(loader: torch.utils.data.DataLoader, model: torch.nn.Module, defi
         if cuda:
             batch = batch.cuda(non_blocking=True)
         recon, mean, logvar, z = model(batch)
-        losses.append(model.loss(batch, recon, mean, logvar, define_topic).detach().cpu())
+        losses.append(model.loss(batch, recon, mean, logvar).detach().cpu())
         counts.append(batch.sum(1).detach().cpu())
         #print("torch.cat(counts)",torch.cat(counts))
         #print("len(counts)",len(counts))
