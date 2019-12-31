@@ -9,10 +9,10 @@ import sys
 import click
 
 @click.command()
-@click.option('--topic_n', help = 'トピック数', type=int, default = 5)
-@click.option('--vacabulary_size', help = '単語数', type=int, default = 10)
-@click.option('--hist_num', help = '文書数（ヒストグラムの列数）', type=int, default = 1000)
-@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 10)
+@click.option('--topic_n', help = 'トピック数', type=int, default = 10)
+@click.option('--vacabulary_size', help = '単語数', type=int, default = 50)
+@click.option('--hist_num', help = '文書数（ヒストグラムの列数）', type=int, default = 3000)
+@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 50)
 @click.option('--mode', help = 'zを固定するかどうか(Falseで固定,Trueで固定しない)', type=bool, default = False)
 @click.option('--test', help = 'テスト用のデータ作成(Falseで訓練用,Trueでテスト用)', type=bool, default = False)
 
@@ -23,7 +23,7 @@ def main(topic_n,
 	mode,
 	test):
 	if test == True:
-	    hist_num = 1000
+	    hist_num = 3000
 
 	# ハイパーパラメータの定義
 	TOPIC_N = topic_n # トピック数
@@ -179,33 +179,7 @@ def main(topic_n,
 	theta_f.close()
 	output_w.close()
 	output_f.close()
-	"""
-	# phiを格納
-	output_phi_w = open(FILE_NAME+'.phi_w','w')
-	for i in range(TOPIC_N):
-		output_phi_w.write(str(i)+'\t')
-		for j in range(HIST_W_SIZE):
-			output_phi_w.write(str(j)+':'+str(phi_w[i][0][j])+' ')
-		output_phi_w.write('\n')
-	output_phi_w.close()
-	output_phi_f = open(FILE_NAME+'.phi_f','w')
-	for i in range(TOPIC_N):
-		output_phi_f.write(str(i)+'\t')
-		for j in range(HIST_W_SIZE):
-			output_phi_f.write(str(j)+':'+str(phi_f[i][0][j])+' ')
-		output_phi_f.write('\n')
-	output_phi_f.close()
-
-	# ハイパーパラメータを格納
-	output_f = open(FILE_NAME+'.hyper','w')
-	output_f.write('TOPIC_N:'+str(TOPIC_N)+'\n')
-	output_f.write('HIST_W_SIZE:'+str(HIST_W_SIZE)+'\n')
-	output_f.write('HIST_H_SIZE:'+str(HIST_H_SIZE)+'\n')
-	output_f.write('TERM_PER_SIZE:'+str(TERM_PER_SIZE)+'\n')
-	output_f.write('alpha:'+str(alpha[0])+'\n')
-	output_f.write('beta:'+str(beta_w[0])+'\n')
-	output_f.close()
-	"""
+	
 	if test == False:
 		np.savetxt( "k"+str(topic_n)+"tr_w.txt", hist_w, fmt=str("%d") )
 		np.savetxt( "k"+str(topic_n)+"tr_f.txt", hist_f, fmt=str("%d") )

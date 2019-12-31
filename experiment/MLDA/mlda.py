@@ -10,7 +10,7 @@ import argparse
 from sklearn.metrics.cluster import adjusted_rand_score
 
 parser = argparse.ArgumentParser(description='MLDA')
-parser.add_argument('--k', type=int, default=3, metavar='K',
+parser.add_argument('--k', type=int, default=10, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 
@@ -138,7 +138,8 @@ def mlda( data, label , K, num_itr=epoch_num, save_dir="model", load_dir=None ):
     liks = []
 
     M = len(data)       # モダリティの数
-
+    print(f"トピック数:{K}")
+    print(f"モダリティの数:{M}")
     dims = []
     for m in range(M):
         if data[m] is not None:
@@ -224,6 +225,7 @@ def mlda( data, label , K, num_itr=epoch_num, save_dir="model", load_dir=None ):
     ari = adjusted_rand_score(doc_dopics,label[0])
     print("ari->",ari)
     
+    """
     plt.figure(figsize=(17,9))
     plt.tick_params(labelsize=18)
     plt.title('MLDA(Topic='+ str(K) +'):Log likelihood',fontsize=24)
@@ -235,19 +237,21 @@ def mlda( data, label , K, num_itr=epoch_num, save_dir="model", load_dir=None ):
     
     #pylab.ioff()
     #pylab.show()
-
+    """
 def main():
     topic = args.k
     data = []
     label = []
     data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_w.txt" , dtype=np.int32) )
     data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_f.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_w.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_f.txt" , dtype=np.int32) )
     label.append(np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_z.txt" , dtype=np.int32))
     #for i in range(30):
     mlda( data, label , topic, 100, "learn_result" )
 
     #data[1] = None
-    mlda( data, label , topic, 20, "recog_result" , "learn_result" )
+    #mlda( data, label , topic, 20, "recog_result" , "learn_result" )
 
 
 if __name__ == '__main__':

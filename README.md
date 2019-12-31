@@ -1,25 +1,10 @@
-# 今後の課題
-1. inference networkの構造  
-- NNのパラメータ等は把握しておく
-- 2層だと分布形状が複雑になる場合，うまく分離できなくなる可能性がある
-2. LDAのGibbs samplerと比較してどうか？  
-- 計算時間の比較を載せる
-- イテレーションの種類が違うことに注意
-3. 学習過程の可視化,確率的モデルとして実装できているかどうかの確認として尤度の可視化を行う  
-- パープレキシティでの評価
-- Gibbs sampling とVI（変分推論）で比較
-トレーニングとテストを分けてやってみる
-4. NNのネットワークの構造を3種類くらい用意してやってみる  
-- 浅いやつ、深いやつ
-- 2層だとできないことを見る
-
 # Implementation of LDAs
 This repository is an implementation of LDA.  
 Implementation contents are as follows　　
 1. **Latent Dirichlet Allocation as a probabilistic generative model.**
 2. **Multimodal Dirichlet Allocation as a probabilistic generative model.**
-3. **Deep-LDA as a deep generative model.**
-4. **Deep-MLDA as a deep generative model.**
+3. **Deep-LDA (LDA based on VAE) as a deep generative model.**
+4. **Deep-MLDA (LDA based on JMVAE) as a deep generative model.**
 
 # Latent Dirichlet Allocation
 [Original paper](http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf)  
