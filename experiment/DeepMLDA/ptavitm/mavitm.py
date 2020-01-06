@@ -203,7 +203,7 @@ class MAVITM(nn.Module):
         jmvae_x1_recon = self.generatorX1(mean, logvar) # 同時分布から生成したx1モダリティの復元誤差
         jmvae_x2_recon = self.generatorX2(mean, logvar) # 同時分布から生成したx2モダリティの復元誤差
         x1_recon = self.generatorX1(x1_mean, x1_logvar) # 同時分布から生成したx1モダリティの復元誤差
-        x2_recon = self.generatorX2(x1_mean, x2_logvar) # 同時分布から生成したx2モダリティの復元誤差
+        x2_recon = self.generatorX2(x2_mean, x2_logvar) # 同時分布から生成したx2モダリティの復元誤差
         z_hoge = self.sample_z(mean, logvar)
         return mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge
 

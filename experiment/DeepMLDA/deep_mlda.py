@@ -17,11 +17,6 @@ from ptavitm.mavitm import MAVITM
 from torch.utils.data import DataLoader
 from ptavitm.utils import CountTensorDataset
 import math
-# Coherenceモデル
-from gensim.corpora.dictionary import Dictionary
-from gensim.models.coherencemodel import CoherenceModel
-from gensim.matutils import Sparse2Corpus
-
 @click.command()
 @click.option(
     '--cuda',
@@ -39,7 +34,7 @@ from gensim.matutils import Sparse2Corpus
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=100
+    default=200
 )
 @click.option(
     '--top-words',
@@ -57,16 +52,16 @@ from gensim.matutils import Sparse2Corpus
     '--k',
     help='トピック数を指定',
     type=int,
-    default=3
+    default=30
 )
 
 def main(cuda,batch_size,epochs,top_words,testing_mode,k):#上のコマンドライン引数
     define_topic = k # トピックの数を事前に定義
-    tr_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_w.txt" , dtype=float)
-    tr_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_f.txt" , dtype=float)
+    tr_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_x1.txt" , dtype=float)
+    tr_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_x2.txt" , dtype=float)
     #tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)
-    te_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_w.txt" , dtype=float)
-    te_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_f.txt" , dtype=float)
+    te_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_x1.txt" , dtype=float)
+    te_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_x2.txt" , dtype=float)
     #te_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_z.txt" , dtype=np.int32)
     """
     データセットの読み込み
@@ -97,7 +92,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode,k):#上のコマンドラ
     x2_reverse_vocab = {x2_vocab[word]: word for word in x2_vocab}
     x2_indexed_vocab = [x2_reverse_vocab[index] for index in range(len(x2_reverse_vocab))]
     ds_tr = TensorDataset(torch.from_numpy(tr_x1).float(),torch.from_numpy(tr_x2).float())
-    ds_te = TensorDataset(torch.from_numpy(te_x1).float(),torch.from_numpy(tr_x2).float())
+    ds_te = TensorDataset(torch.from_numpy(te_x1).float(),torch.from_numpy(te_x2).float())
 
     writer = SummaryWriter()
     model = MAVITM(

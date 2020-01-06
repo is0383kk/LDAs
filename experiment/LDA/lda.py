@@ -145,24 +145,6 @@ def lda( data , label, K , epoch =100, save_dir="model"):
         docs_dn[d] = conv_to_word_list( data[d] )
         topics_dn[d] = np.random.randint( 0, K, len(docs_dn[d]) ) # 各単語にランダムでトピックを割り当てる
 
-    """
-    d = np.array(docs_dn[3])
-    print("ddn",d.shape) 50
-    t = np.array(topics_dn[3])
-    print("tdn",t.shape) 50
-
-    BoW =
-    [[1. 1. 1. 1. 1. 1. 0. 0. 0. 0. 0. 0. 0. 0.]
-    [1. 1. 1. 0. 1. 1. 1. 0. 0. 0. 0. 0. 0. 0.]
-    [0. 0. 1. 1. 0. 0. 0. 1. 1. 1. 1. 0. 0. 0.]
-    [0. 0. 1. 1. 0. 0. 0. 0. 0. 0. 0. 1. 1. 1.]] x 10倍してる
-    ###############################################
-    出現した語彙（のインデックス）を一列にしたものddn[3]: [2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 11 11 11 11 11 11 11 11 11 11 12 12 12 12 12 12 12 12 12 12 13 13 13 13 13 13 13 13 13 13]出現した語彙のインデックス x 10個（最初の読み込みの部分）
-    ###############################################
-    tdn[3]: [1 1 1 2 1 1 1 0 1 0 2 0 2 1 1 2 1 1 2 1 1 0 2 0 2 1 0 0 1 1 0 2 0 0 0 1 2 1 1 1 0 0 2 0 1 2 2 1 1 1]ddnに対応するトピックをランダム割当て
-    """
-
-
 
     # LDAのパラメータを計算
     n_dz, n_zv, n_z = calc_lda_param( docs_dn, topics_dn, K, V )
@@ -245,7 +227,7 @@ def lda( data , label, K , epoch =100, save_dir="model"):
         print(e)
     finally:
         file.close()
-    
+    """
     plt_epoch_list = np.arange(epoch_num)
     fig, (axL, axR) = plt.subplots(ncols=2, figsize=(18,9))
 
@@ -269,7 +251,7 @@ def lda( data , label, K , epoch =100, save_dir="model"):
     axR.grid(True)
     
     fig.savefig('lda_lp.png')
-    
+    """
     #plt.savefig('result.png')
     
     #plt.ioff()
@@ -278,9 +260,9 @@ def lda( data , label, K , epoch =100, save_dir="model"):
     #print(topics_dn[3])
 
 def main():
-    topic = 20 # トピック数を指定
-    root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt"
-    label_data = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt"
+    topic = 3 # トピック数を指定
+    root = "../make_synthetic_data/test_hist.txt"
+    label_data = "../make_synthetic_data/test_label.txt"
     #n = 10 # データの水増し用の変数
     #data = np.loadtxt( root , dtype=np.int32)*n # 発生回数にnをかけて水増し可能
     data = np.loadtxt( root , dtype=np.int32)

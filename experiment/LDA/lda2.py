@@ -176,6 +176,9 @@ def lda( data , label, K , epoch =100, save_dir="model", load_dir=None):
 
     if load_dir is not None:
         n_zv, n_z = load_model( load_dir )
+        print("n_zv",n_zv)
+        print("n_z",n_z)
+        print("Load model")
         
     for it in range(epoch_num):
         print(str(it + 1) + "回目")
@@ -190,9 +193,9 @@ def lda( data , label, K , epoch =100, save_dir="model", load_dir=None):
                 # データを取り除きパラメータを更新
                 # n 番目の単語 v (トピック z)についてカウンタを減算
                 n_dz[d][z] -= 1
-                if load_dir is None:
-                    n_zv[z][v] -= 1
-                    n_z[z] -= 1
+                #if load_dir is None:
+                n_zv[z][v] -= 1
+                n_z[z] -= 1
 
                 # サンプリング
                 z = sample_topic( d, v, n_dz, n_zv, n_z, K, V )
@@ -200,9 +203,9 @@ def lda( data , label, K , epoch =100, save_dir="model", load_dir=None):
                 # データをサンプリングされたクラスに追加してパラメータを更新
                 topics_dn[d][n] = z
                 n_dz[d][z] += 1
-                if load_dir is None:
-                    n_zv[z][v] += 1
-                    n_z[z] += 1
+                #if load_dir is None:
+                n_zv[z][v] += 1
+                n_z[z] += 1
 
 
         lik = calc_liklihood( data, n_dz, n_zv, n_z, K, V )
@@ -293,11 +296,11 @@ def lda( data , label, K , epoch =100, save_dir="model", load_dir=None):
     #print(topics_dn[3])
 
 def main():
-    topic = 10 # トピック数を指定
+    topic = 3 # トピック数を指定
     test = True
     if test == False:
-        root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt"
-        label_data = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt"
+        root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/k3tr.txt"
+        label_data = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/k3tr_label.txt"
         #n = 10 # データの水増し用の変数
         #data = np.loadtxt( root , dtype=np.int32)*n # 発生回数にnをかけて水増し可能
         data = np.loadtxt( root , dtype=np.int32)
@@ -306,8 +309,8 @@ def main():
         #for i in range(30):
         lda( data , label, topic, 50, "learn_result" )
     else:
-        root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt"
-        label_data = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt"
+        root = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/k3tr.txt"
+        label_data = "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/k3tr_label.txt"
         #n = 10 # データの水増し用の変数
         #data = np.loadtxt( root , dtype=np.int32)*n # 発生回数にnをかけて水増し可能
         data = np.loadtxt( root , dtype=np.int32)
