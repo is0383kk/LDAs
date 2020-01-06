@@ -16,21 +16,33 @@ import torch.nn.functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
 
 parser = argparse.ArgumentParser(description='Plot latent variable:Amortized MLDA')
-parser.add_argument('--k', type=int, default=10, metavar='K',
+parser.add_argument('--k', type=int, default=30, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 
 define_topic = args.k # トピックの数を事前に定義
-tr_x1 = np.loadtxt( "../k10word.txt" , dtype=float)
-tr_x2 = np.loadtxt( "../k10tactile.txt" , dtype=float)
-tr_x3 = np.loadtxt( "../k10vision.txt" , dtype=float)
-tr_x4 = np.loadtxt( "../k10audio.txt" , dtype=float)
-tr_label = np.loadtxt( "../k10label.txt" , dtype=np.int32)
-te_x1 = np.loadtxt( "../k10word.txt" , dtype=float)
-te_x2 = np.loadtxt( "../k10tactile.txt" , dtype=float)
-te_x3 = np.loadtxt( "../k10vision.txt" , dtype=float)
-te_x4 = np.loadtxt( "../k10audio.txt" , dtype=float)
-te_label = np.loadtxt( "../k10label.txt" , dtype=np.int32)
+tr_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_x1.txt" , dtype=float)
+tr_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_x2.txt" , dtype=float)
+tr_x3 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_x3.txt" , dtype=float)
+tr_x4 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_x4.txt" , dtype=float)
+#tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)
+te_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_x1.txt" , dtype=float)
+te_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_x2.txt" , dtype=float)
+te_x3 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_x3.txt" , dtype=float)
+te_x4 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_x4.txt" , dtype=float)
+
+tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)
+te_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_z.txt" , dtype=np.int32)
+
+print(tr_x1.shape)
+print(tr_x2.shape)
+print(tr_x3.shape)
+print(tr_x4.shape)
+
+print(te_x1.shape)
+print(te_x2.shape)
+print(te_x3.shape)
+print(te_x4.shape)
 
 model = MAVITM(
 topics = define_topic,
@@ -39,11 +51,11 @@ input_x1 = len(tr_x1[0]),
 input_x2 = len(tr_x2[0]),
 input_x3 = len(tr_x3[0]),
 input_x4 = len(tr_x4[0]),
-hidden1_dimension = 60,
-hidden2_dimension = 60,
+hidden1_dimension = 100,
+hidden2_dimension = 100,
 )
 
-model.load_state_dict(torch.load('./deepmlda.pth'))
+model.load_state_dict(torch.load('./deepmlda4m.pth'))
 #autoencoder.load_state_dict(torch.load('./deeplda.pth'))
 
 """
@@ -56,14 +68,14 @@ BoWと同じように訓練できるようにしただけ
 print('Loading input data')
 #データセット定義
 ds_tr = TensorDataset(torch.from_numpy(tr_x1).float(),torch.from_numpy(tr_x2).float(),torch.from_numpy(tr_x3).float(),torch.from_numpy(tr_x4).float(),torch.from_numpy(tr_label).int())
-ds_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(te_x1).float(),torch.from_numpy(tr_x3).float(),torch.from_numpy(tr_x4).float(),torch.from_numpy(te_label).int())
+ds_te = TensorDataset(torch.from_numpy(te_x1).float(),torch.from_numpy(te_x2).float(),torch.from_numpy(te_x3).float(),torch.from_numpy(te_x4).float(),torch.from_numpy(te_label).int())
 #crossmodal_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(te_label).int())
 
 #モデルの定義
 
 print(f"autoencoder->{model}")
 
-batch = 44
+batch = 1000
 
 
 trainloader = DataLoader(
@@ -111,7 +123,7 @@ def visualize_zs(zs, labels, mode, ari):
     #ax = Axes3D(fig)
     points = TSNE(n_components=2, random_state=0).fit_transform(zs)
     for p, l in zip(points, labels):
-        plt.title(f"Latent space(PCA):Top:{str(define_topic)}, Doc:{str(batch)}, ARI:{ari}", fontsize=22)
+        plt.title(f"Latent space:Top:{str(define_topic)}, Doc:{str(batch)}, ARI:{ari}", fontsize=22)
         plt.xlabel("Latent space:xlabel", fontsize=21)
         plt.ylabel("Latent space:ylabel", fontsize=21)
         plt.tick_params(labelsize=17)
@@ -131,19 +143,19 @@ for x,t in enumerate(trainloader):
     #print(f"tr_label->{predict_tr_label}")
     #print(f"predict_train_label->{predict_train_label}")
     tr_ari = adjusted_rand_score(tr_label,predict_tr_label)
-    print(f"Joint:ARI->{tr_ari}")
     print("label",tr_label)
     print("pred",predict_tr_label)
+    print(f"Joint:ARI->{tr_ari}")
     visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN", tr_ari)
     break
-"""
+
 for x,t in enumerate(testloader):
     print("***********Joint multi-modal inference***********")
     #print(f"te_x1 ->{t[0]}")
     #print(f"te_x1 ->{t[1]}")
-    mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0], t[1])
+    mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, jmvae_x3_recon, x3_recon, x3_mean, x3_logvar, jmvae_x4_recon, x4_recon, x4_mean, x4_logvar, z_hoge = model(t[0], t[1], t[2], t[3])
     te_z = z_hoge.cpu()
-    te_label = t[2].cpu()
+    te_label = t[4].cpu()
     #print(f"te_label->{te_label}")
     predict_te_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
     print(f"pr_label->{predict_te_label}")
@@ -152,7 +164,7 @@ for x,t in enumerate(testloader):
     print(f"Joint:ARI->{te_ari}")
     visualize_zs(te_z.detach().numpy(), te_label.detach().numpy(), "TEST", te_ari)
     break
-"""
+
 """
 for x,t in enumerate(crossmodalloader):
     print("***********Cross-modal inference***********")

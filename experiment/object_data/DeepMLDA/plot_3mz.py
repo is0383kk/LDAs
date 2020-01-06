@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch.utils.data import TensorDataset
 #from ptavitm.vae import ProdLDA
-from ptavitm.mavitm_4m import MAVITM
+from ptavitm.mavitm_3m import MAVITM
 # データローダ
 from torch.utils.data import DataLoader
 # クラス推定
@@ -21,14 +21,23 @@ parser.add_argument('--k', type=int, default=10, metavar='K',
 args = parser.parse_args()
 
 define_topic = args.k # トピックの数を事前に定義
-tr_x1 = np.loadtxt( "../k10word.txt" , dtype=float)
+tr_x1 = np.loadtxt( "../k10audio.txt" , dtype=float)
 tr_x2 = np.loadtxt( "../k10tactile.txt" , dtype=float)
 tr_x3 = np.loadtxt( "../k10vision.txt" , dtype=float)
-tr_label = np.loadtxt( "../k10label.txt" , dtype=np.int32)
-te_x1 = np.loadtxt( "../k10word.txt" , dtype=float)
+#tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)
+te_x1 = np.loadtxt( "../k10audio.txt" , dtype=float)
 te_x2 = np.loadtxt( "../k10tactile.txt" , dtype=float)
 te_x3 = np.loadtxt( "../k10vision.txt" , dtype=float)
+
+tr_label = np.loadtxt( "../k10label.txt" , dtype=np.int32)
 te_label = np.loadtxt( "../k10label.txt" , dtype=np.int32)
+
+print("tr_x1.shape->{}".format(tr_x1.shape))
+print("tr_x2.shape->{}".format(tr_x2.shape))
+print("tr_x3.shape->{}".format(tr_x3.shape))
+print("te_x1.shape->{}".format(te_x1.shape))
+print("te_x2.shape->{}".format(te_x2.shape))
+print("te_x3.shape->{}".format(te_x3.shape))
 
 model = MAVITM(
 topics = define_topic,
@@ -36,8 +45,8 @@ joint_input = len(tr_x1[0]) + len(tr_x2[0]) + len(tr_x3[0]),
 input_x1 = len(tr_x1[0]),
 input_x2 = len(tr_x2[0]),
 input_x3 = len(tr_x3[0]),
-hidden1_dimension = 100,
-hidden2_dimension = 100,
+hidden1_dimension = 30,
+hidden2_dimension = 30,
 )
 
 model.load_state_dict(torch.load('./deepmlda3m.pth'))
@@ -53,7 +62,7 @@ BoWと同じように訓練できるようにしただけ
 print('Loading input data')
 #データセット定義
 ds_tr = TensorDataset(torch.from_numpy(tr_x1).float(),torch.from_numpy(tr_x2).float(),torch.from_numpy(tr_x3).float(),torch.from_numpy(tr_label).int())
-ds_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(te_x1).float(),torch.from_numpy(te_x3).float(),torch.from_numpy(te_label).int())
+ds_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(te_x2).float(),torch.from_numpy(te_x3).float(),torch.from_numpy(te_label).int())
 #crossmodal_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(te_label).int())
 
 #モデルの定義
@@ -128,9 +137,9 @@ for x,t in enumerate(trainloader):
     #print(f"tr_label->{predict_tr_label}")
     #print(f"predict_train_label->{predict_train_label}")
     tr_ari = adjusted_rand_score(tr_label,predict_tr_label)
-    print(f"Joint:ARI->{tr_ari}")
     print("label",tr_label)
     print("pred",predict_tr_label)
+    print(f"Joint:ARI->{tr_ari}")
     visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN", tr_ari)
     break
 

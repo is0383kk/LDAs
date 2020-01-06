@@ -196,4 +196,4 @@ def train(dataset: torch.utils.data.Dataset,
     plt.plot(plt_epoch_list,plt_loss_list)
 
     plt.savefig('liks.png')
-    torch.save(autoencoder.state_dict(), 'deepmlda.pth')
+    torch.save(autoencoder.state_dict(), 'deepmlda4m.pth')
