@@ -29,7 +29,7 @@ import math
     '--batch-size',
     help='バッチサイズ(文書数/batch_size ).',
     type=int,
-    default=4
+    default=8
 )
 @click.option(
     '--epochs',
@@ -53,7 +53,7 @@ import math
     '--k',
     help='トピック数を指定',
     type=int,
-    default=10
+    default=7
 )
 
 def main(cuda,batch_size,epochs,top_words,testing_mode,k):#上のコマンドライン引数
@@ -113,8 +113,8 @@ def main(cuda,batch_size,epochs,top_words,testing_mode,k):#上のコマンドラ
     input_x1 = len(tr_x1[0]),
     input_x2 = len(tr_x2[0]),
     input_x3 = len(tr_x3[0]),
-    hidden1_dimension = 30,
-    hidden2_dimension = 30,
+    hidden1_dimension = 70,
+    hidden2_dimension = 50,
     )
     print(model)
     print('Training stage.')

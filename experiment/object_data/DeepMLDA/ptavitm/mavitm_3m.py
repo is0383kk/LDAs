@@ -113,16 +113,16 @@ class MAVITM(nn.Module):
             input_x1, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
         # Inference net q(z|x2) & Generator p(x2|z)
-        self.inference_x2 = encoder(input_x2, hidden1_dimension, hidden2_dimension, encoder_noise)
-        self.x2_mean = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
-        self.x2_logvar = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.inference_x2 = encoder(input_x2, 30, 30, encoder_noise)
+        self.x2_mean = hidden(30, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.x2_logvar = hidden(30, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
         self.x2_generator = decoder(
             input_x2, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
         # Inference net q(z|x3) & Generator p(x3|z)
-        self.inference_x3 = encoder(input_x3, 70, 70, encoder_noise)
-        self.x3_mean = hidden(70, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
-        self.x3_logvar = hidden(70, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.inference_x3 = encoder(input_x3, 100, 100, encoder_noise)
+        self.x3_mean = hidden(100, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.x3_logvar = hidden(100, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
         self.x3_generator = decoder(
             input_x3, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )

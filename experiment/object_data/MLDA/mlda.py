@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score
 
 
 parser = argparse.ArgumentParser(description='MLDA')
-parser.add_argument('--k', type=int, default=10, metavar='K',
+parser.add_argument('--k', type=int, default=30, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 
@@ -268,10 +268,10 @@ def main():
     data = []
     label = []
     #data.append( np.loadtxt( "./k10word.txt" , dtype=np.int32)*10 )
-    data.append( np.loadtxt( "../k10tactile.txt" , dtype=np.int32)*5 )
-    data.append( np.loadtxt( "../k10audio.txt" , dtype=np.int32) )
-    data.append( np.loadtxt( "../k10vision.txt" , dtype=np.int32) )
-    label.append(np.loadtxt( "../k10label.txt" , dtype=np.int32))
+    data.append( np.loadtxt( "../k"+str(topic)+"tactile.txt" , dtype=np.int32)*5 )
+    data.append( np.loadtxt( "../k"+str(topic)+"audio.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../k"+str(topic)+"vision.txt" , dtype=np.int32) )
+    label.append(np.loadtxt( "../k"+str(topic)+"label.txt" , dtype=np.int32))
     #for i in range(30):
     mlda( data, label , topic, 100, "learn_result" )
 
