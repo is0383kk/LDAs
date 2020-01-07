@@ -7,9 +7,9 @@ import click
 
 @click.command()
 @click.option('--topic_n', help = 'トピック数', type=int, default = 10)
-@click.option('--vacabulary_size', help = '単語数', type=int, default = 30)
+@click.option('--vacabulary_size', help = '単語数', type=int, default = 	150)
 @click.option('--doc_num', help = '文書数（ヒストグラムの列数）', type=int, default = 1000)
-@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 30)
+@click.option('--term_per_doc', help = '文書ごとの単語数（ヒストグラムの行数）', type=int, default = 150)
 @click.option('--mode', help = 'zを固定するかどうか(Falseで固定,Trueで固定しない)', type=bool, default = False)
 @click.option('--test', help = 'テスト用のデータ作成(Falseで訓練用,Trueでテスト用)', type=bool, default = False)
 
@@ -30,7 +30,7 @@ def main(topic_n,
 	TERM_PER_DOC = term_per_doc # ドキュメントごとの単語数
 	MODE = mode
 
-	beta = [0.1 for i in range(VOCABULARY_SIZE)] # ディレクレ分布のパラメータ(グラフィカルモデル右端)
+	beta = [0.6 for i in range(VOCABULARY_SIZE)] # ディレクレ分布のパラメータ(グラフィカルモデル右端)
 	alpha = [0.1 for i in range(TOPIC_N)] # #ディレクレ分布のパラメータ(グラフィカルモデル左端)
 
 
@@ -44,8 +44,8 @@ def main(topic_n,
 	hist = np.zeros( (DOC_NUM, TERM_PER_DOC) ) # ヒストグラム格納用の変数
 	document_label = np.zeros(DOC_NUM) # 単語の潜在変数を元に文書ラベルを決定する変数
 	z_max = -1145141919810 # z_countと比較するための変数
-	tpd_t = int(TERM_PER_DOC / TOPIC_N) # 不正操作用の変数．単語生成確率を操作
-	prob = float(1 / tpd_t) # 不正操作用の変数．
+	#tpd_t = int(TERM_PER_DOC / TOPIC_N) # 不正操作用の変数．単語生成確率を操作
+	#prob = float(1 / tpd_t) # 不正操作用の変数．
 	#print(document_label[0])
 	#print(hist)
 	#print(hist[0])
@@ -55,8 +55,10 @@ def main(topic_n,
 	topic = []
 	for i in range(TOPIC_N):
 		if MODE == True:
-			topic = np.zeros(TERM_PER_DOC)
-			topic[i*tpd_t : tpd_t*(i+1)] = prob
+			#topic = np.zeros(TERM_PER_DOC)
+			#topic[i*tpd_t : tpd_t*(i+1)] = prob
+			#phi.append(topic)
+			topic = np.random.mtrand.dirichlet(beta, size = 1)
 			phi.append(topic)
 		else:
 			topic = np.random.mtrand.dirichlet(beta, size = 1)
@@ -119,7 +121,8 @@ def main(topic_n,
 			# トピックzからサンプリングされる観測w
 			if MODE == True:
 				# 不正操作モード
-				w = np.random.multinomial(1,phi[z_assignment],size = 1)
+				#w = np.random.multinomial(1,phi[z_assignment],size = 1)
+				w = np.random.multinomial(1,phi[z_assignment][0],size = 1)
 			else:
 				# 一様乱数モード
 				w = np.random.multinomial(1,phi[z_assignment][0],size = 1)

@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from torch.utils.data import TensorDataset
 #from ptavitm.vae import ProdLDA
-from ptavitm.mavitm import MAVITM
+from ptavitm.vae_tanh import ProdLDA
 # データローダ
 from torch.utils.data import DataLoader
 # クラス推定
@@ -16,27 +16,23 @@ import torch.nn.functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
 
 parser = argparse.ArgumentParser(description='Plot latent variable:Amortized MLDA')
-parser.add_argument('--k', type=int, default=3, metavar='K',
+parser.add_argument('--k', type=int, default=10, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 
 define_topic = args.k # トピックの数を事前に定義
-tr_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_w.txt" , dtype=float)
-tr_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_f.txt" , dtype=float)
+tr_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_x1.txt" , dtype=float)
 tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)
-te_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_w.txt" , dtype=float)
-te_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_f.txt" , dtype=float)
+te_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_x1.txt" , dtype=float)
 te_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_z.txt" , dtype=np.int32)
 
-model = MAVITM(
-topics=define_topic,
-joint_input = len(tr_x1[0])+len(tr_x2[0]),
-input_x1=len(tr_x1[0]),
-input_x2=len(tr_x2[0]),
-hidden1_dimension=100,
+model = ProdLDA(
+in_dimension=len(tr_x1[0]),# 入力,本来はlen(vocab),1995,ただし,ヒストグラムの次元数と等しい
+hidden1_dimension=100, # 中間層
 hidden2_dimension=100,
+topics=define_topic
 )
-model.load_state_dict(torch.load('./deepmlda.pth'))
+model.load_state_dict(torch.load('./deeplda.pth'))
 #autoencoder.load_state_dict(torch.load('./deeplda.pth'))
 
 """
@@ -48,9 +44,9 @@ BoWと同じように訓練できるようにしただけ
 # ここまでがBoFを作成する作業#############################################
 print('Loading input data')
 #データセット定義
-ds_tr = TensorDataset(torch.from_numpy(tr_x1).float(),torch.from_numpy(tr_x2).float(),torch.from_numpy(tr_label).int())
-ds_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(te_x1).float(), torch.from_numpy(te_label).int())
-crossmodal_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(te_label).int())
+ds_tr = TensorDataset(torch.from_numpy(tr_x1).float(), torch.from_numpy(tr_label).int())
+ds_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(te_label).int())
+#crossmodal_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(te_label).int())
 
 #モデルの定義
 
@@ -69,10 +65,12 @@ testloader = DataLoader(
     batch_size=batch,
 )
 
+"""
 crossmodalloader = DataLoader(
     crossmodal_te,
     batch_size=batch,
 )
+"""
 # 潜在変数の可視化
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
@@ -103,7 +101,7 @@ def visualize_zs(zs, labels, mode, ari):
     #ax = Axes3D(fig)
     points = PCA(n_components=2, random_state=0).fit_transform(zs)
     for p, l in zip(points, labels):
-        plt.title(f"Latent space(PCA):Top:{str(define_topic)}, Doc:{str(batch)}, ARI:{ari}", fontsize=22)
+        plt.title(f"Latent space:Top:{str(define_topic)}, Doc:{str(batch)}, ARI:{ari}", fontsize=22)
         plt.xlabel("Latent space:xlabel", fontsize=21)
         plt.ylabel("Latent space:ylabel", fontsize=21)
         plt.tick_params(labelsize=17)
@@ -115,33 +113,37 @@ for x,t in enumerate(trainloader):
     print("***********Joint multi-modal inference***********")
     #print(f"te_x1 ->{t[0]}")
     #print(f"te_x1 ->{t[1]}")
-    mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0], t[1])
+    recon, mean, logvar, z_hoge = model(t[0])
     tr_z = z_hoge.cpu()
-    tr_label = t[2].cpu()
+    tr_label = t[1].cpu()
     #print(f"te_label->{te_label}")
     predict_tr_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
     #print(f"tr_label->{predict_tr_label}")
     #print(f"predict_train_label->{predict_train_label}")
     tr_ari = adjusted_rand_score(tr_label,predict_tr_label)
     print(f"Joint:ARI->{tr_ari}")
-    visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN", tr_ari)
+    #visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN", tr_ari)
     break
 
-for x,t in enumerate(testloader):
-    print("***********Joint multi-modal inference***********")
-    #print(f"te_x1 ->{t[0]}")
-    #print(f"te_x1 ->{t[1]}")
-    mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0], t[1])
-    te_z = z_hoge.cpu()
-    te_label = t[2].cpu()
-    #print(f"te_label->{te_label}")
-    predict_te_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
-    print(f"pr_label->{predict_te_label}")
-    #print(f"predict_train_label->{predict_train_label}")
-    te_ari = adjusted_rand_score(te_label,predict_te_label)
-    print(f"Joint:ARI->{te_ari}")
-    visualize_zs(te_z.detach().numpy(), te_label.detach().numpy(), "TEST", te_ari)
-    break
+score = []
+for i in range(30):
+    for x,t in enumerate(testloader):
+        print("***********Joint multi-modal inference***********")
+        #print(f"te_x1 ->{t[0]}")
+        #print(f"te_x1 ->{t[1]}")
+        recon, mean, logvar, z_hoge = model(t[0])
+        te_z = z_hoge.cpu()
+        te_label = t[1].cpu()
+        #print(f"te_label->{te_label}")
+        predict_te_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
+        print(f"pr_label->{predict_te_label}")
+        #print(f"predict_train_label->{predict_train_label}")
+        te_ari = adjusted_rand_score(te_label,predict_te_label)
+        score.append(te_ari)
+        print(f"Joint:ARI->{te_ari}")
+        #visualize_zs(te_z.detach().numpy(), te_label.detach().numpy(), "TEST", te_ari)
+        break
+print("平均ARI", sum(score) / len(score))
 
 """
 for x,t in enumerate(crossmodalloader):

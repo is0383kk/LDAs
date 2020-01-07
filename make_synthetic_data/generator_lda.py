@@ -50,8 +50,10 @@ def main(topic_n,
 	topic = []
 	for i in range(TOPIC_N):
 		if MODE == True: # 不正操作モード
-			topic = np.zeros(TERM_PER_DOC)
-			topic[i*tpd_t : tpd_t*(i+1)] = prob
+			#topic = np.zeros(TERM_PER_DOC)
+			#topic[i*tpd_t : tpd_t*(i+1)] = prob
+			#phi.append(topic)
+			topic = np.random.mtrand.dirichlet(beta, size = 1)
 			phi.append(topic)
 		else: # 一様乱数から生成
 			topic = np.random.mtrand.dirichlet(beta, size = 1)
@@ -85,7 +87,8 @@ def main(topic_n,
 			# トピックzからサンプリングされる観測w
 			if MODE == True:
 				# 不正操作モード
-				w = np.random.multinomial(1,phi[z_assignment],size = 1)
+				#w = np.random.multinomial(1,phi[z_assignment],size = 1)
+				w = np.random.multinomial(1,phi[z_assignment][0],size = 1)
 			else:
 				# 一様乱数モード
 				w = np.random.multinomial(1,phi[z_assignment][0],size = 1)

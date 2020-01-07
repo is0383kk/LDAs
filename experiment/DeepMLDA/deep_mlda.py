@@ -10,7 +10,7 @@ from torch.utils.data import TensorDataset
 from tensorboardX import SummaryWriter
 import pickle
 # DeepLDA用の訓練用関数とvaeモデル
-from ptavitm.model import train
+from ptavitm.model_2m import train
 #from ptavitm.vae import ProdLDA
 from ptavitm.mavitm import MAVITM
 # データローダ
@@ -52,7 +52,7 @@ import math
     '--k',
     help='トピック数を指定',
     type=int,
-    default=30
+    default=10
 )
 
 def main(cuda,batch_size,epochs,top_words,testing_mode,k):#上のコマンドライン引数

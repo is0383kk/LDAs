@@ -58,11 +58,11 @@ from gensim.matutils import Sparse2Corpus
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 30 # トピックの数を事前に定義
-    hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/hist.txt" , dtype=float)
-    label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/label.txt" , dtype=np.int32)
-    test_hist = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_hist.txt" , dtype=float)
-    test_label = np.loadtxt( "/home/yoshiwo/workspace/res/study/experiment/make_synthetic_data/test_label.txt" , dtype=np.int32)
+    define_topic = 10 # トピックの数を事前に定義
+    hist = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_x6.txt" , dtype=float)
+    label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=float)
+    test_hist = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_x6.txt" , dtype=float)
+    test_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_z.txt" , dtype=float)
     tensor_tr = torch.from_numpy(hist).float()
     """
     データセットの読み込み

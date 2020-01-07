@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
 
 parser = argparse.ArgumentParser(description='Plot latent variable:Amortized MLDA')
-parser.add_argument('--k', type=int, default=30, metavar='K',
+parser.add_argument('--k', type=int, default=10, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 
@@ -146,24 +146,28 @@ for x,t in enumerate(trainloader):
     print("label",tr_label)
     print("pred",predict_tr_label)
     print(f"Joint:ARI->{tr_ari}")
-    visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN", tr_ari)
+    #visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN", tr_ari)
     break
 
-for x,t in enumerate(testloader):
-    print("***********Joint multi-modal inference***********")
-    #print(f"te_x1 ->{t[0]}")
-    #print(f"te_x1 ->{t[1]}")
-    mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, jmvae_x3_recon, x3_recon, x3_mean, x3_logvar, jmvae_x4_recon, x4_recon, x4_mean, x4_logvar, z_hoge = model(t[0], t[1], t[2], t[3])
-    te_z = z_hoge.cpu()
-    te_label = t[4].cpu()
-    #print(f"te_label->{te_label}")
-    predict_te_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
-    print(f"pr_label->{predict_te_label}")
-    #print(f"predict_train_label->{predict_train_label}")
-    te_ari = adjusted_rand_score(te_label,predict_te_label)
-    print(f"Joint:ARI->{te_ari}")
-    visualize_zs(te_z.detach().numpy(), te_label.detach().numpy(), "TEST", te_ari)
-    break
+score = []
+for i in range(30):
+    for x,t in enumerate(testloader):
+        print("***********Joint multi-modal inference***********")
+        #print(f"te_x1 ->{t[0]}")
+        #print(f"te_x1 ->{t[1]}")
+        mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, jmvae_x3_recon, x3_recon, x3_mean, x3_logvar, jmvae_x4_recon, x4_recon, x4_mean, x4_logvar, z_hoge = model(t[0], t[1], t[2], t[3])
+        te_z = z_hoge.cpu()
+        te_label = t[4].cpu()
+        #print(f"te_label->{te_label}")
+        predict_te_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
+        print(f"pr_label->{predict_te_label}")
+        #print(f"predict_train_label->{predict_train_label}")
+        te_ari = adjusted_rand_score(te_label,predict_te_label)
+        score.append(te_ari)
+        print(f"Joint:ARI->{te_ari}")
+        #visualize_zs(te_z.detach().numpy(), te_label.detach().numpy(), "TEST", te_ari)
+        break
+print("平均ARI", sum(score) / len(score))
 
 """
 for x,t in enumerate(crossmodalloader):
