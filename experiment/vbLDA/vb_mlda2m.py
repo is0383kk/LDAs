@@ -14,59 +14,54 @@ if __name__ == "__main__":
 
     # initialize parameters
     K = 3
-    W = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr.txt" , dtype=np.int32)
+    x1 = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr.txt" , dtype=np.int32)
+    x2 = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr.txt" , dtype=np.int32)
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
-    D = W.shape[0]
-    V = W.shape[1]
-    print("D,V->",D,V)
-    print("W",W)
-    N = np.full(D, V)
-    alpha0, beta0 = 1.0, 1.0
+    D = x1.shape[0]
+    V1 = x1.shape[1]
+    V2 = x2.shape[1]
+    #print("D1,V1->",D1,V1)
+    #print("D2,V2->",D2,V2)
+    #print("x1",x1)
+    N1 = np.full(D, V1)
+    N2 = np.full(D, V2)
+    #print("N1,N2->",N1,N2)
+    alpha0, beta0_x1, beta0_x2 = 1.0, 1.0, 1.0
     alpha = alpha0 + np.random.rand(D, K)
-    beta = beta0 + np.random.rand(K, V)
+    beta1 = beta0_x1 + np.random.rand(K, V1)
+    beta2 = beta0_x1 + np.random.rand(K, V2)
     theta = normalized_random_array(D, K)
-    phi = normalized_random_array(K, V)
+    phi_x1 = normalized_random_array(K, V1)
+    phi_x2 = normalized_random_array(K, V2)
 
-    # for generate documents
-    _theta = np.array([theta[:, :k+1].sum(axis = 1) for k in range(K)]).T
-    _phi = np.array([phi[:, :v+1].sum(axis = 1) for v in range(V)]).T
-    
-    _Z = []
-    _W = [] 
-    #N = np.full(D, V)
-    for (d, N_d) in enumerate(N):
-        _Z.append((np.random.rand(N_d, 1) < _theta[d, :]).argmax(axis = 1))
-        _W.append((np.random.rand(N_d, 1) < _phi[_Z[-1], :]).argmax(axis = 1))
-
-    """
-    # generate documents
-    #W, Z = [], []
-    #N = np.random.randint(100, 300, D)
-    
-    for (d, N_d) in enumerate(N):
-        Z.append((np.random.rand(N_d, 1) < _theta[d, :]).argmax(axis = 1))
-        W.append((np.random.rand(N_d, 1) < _phi[Z[-1], :]).argmax(axis = 1))
-    """
-    data = []
-    for (d, N_d) in enumerate(N):
-        W_data = []
-        # q
-        q = np.zeros((V, K))
-        #v, count = np.unique(W[d], return_counts = True)
-        count = W[d]
-        
-        index = np.where(W[d]==0)
-        
+    X1 = []
+    for (d, N_d) in enumerate(N1):
+        x1_data = []
+        count = x1[d]
+        index = np.where(x1[d]==0)
         count = count[count!=0]
-        
-        v = np.arange(len(W[d]))
+        v = np.arange(len(x1[d]))
         v = np.delete(v, index)
         
         for i1, i2 in enumerate(count):    
             for i3 in range(i2):
-                W_data.append(v[i1])
-        data.append(W_data)
-    print("data->",data)
+                x1_data.append(v[i1])
+        X1.append(x1_data)
+    
+    X2 = []
+    for (d, N_d) in enumerate(N1):
+        x2_data = []
+        count = x2[d]
+        index = np.where(x2[d]==0)
+        count = count[count!=0]
+        v = np.arange(len(x1[d]))
+        v = np.delete(v, index)
+        
+        for i1, i2 in enumerate(count):    
+            for i3 in range(i2):
+                x2_data.append(v[i1])
+        X2.append(x2_data)
+    #print("X1->",X1)
         
     #print(f"W->\n{W[0]}")
     #print(f"data->\n{data[0]}")
@@ -81,14 +76,18 @@ if __name__ == "__main__":
         print(f"Epoch->{t}")
         
         dig_alpha = digamma(alpha) - digamma(alpha.sum(axis = 1, keepdims = True))
-        dig_beta = digamma(beta) - digamma(beta.sum(axis = 1, keepdims = True))
+        dig_beta1 = digamma(beta1) - digamma(beta1.sum(axis = 1, keepdims = True))
+        dig_beta2 = digamma(beta2) - digamma(beta2.sum(axis = 1, keepdims = True))
 
         alpha_new = np.ones((D, K)) * alpha0
-        beta_new = np.ones((K, V)) * beta0
-        for (d, N_d) in enumerate(N):
+        beta_new1 = np.ones((K, V1)) * beta0_x1
+        beta_new2 = np.ones((K, V2)) * beta0_x2
+        for (d, N_d) in enumerate(N1):
             #W_data = []
             # q
-            q = np.zeros((V, K))
+            q1 = np.zeros((V1, K))
+            q2 = np.zeros((V2, K))
+            q = q1 + q2
             #v, count = np.unique(W[d], return_counts = True)
             #count = W[d]
             
@@ -108,23 +107,27 @@ if __name__ == "__main__":
             
             #print(f"count->{count}")
             #print(f"v->{v}")
-            v, count = np.unique(data[d], return_counts = True)
-            q[v, :] = (np.exp(dig_alpha[d, :].reshape(-1, 1) + dig_beta[:, v]) * count).T
+            v1, count1 = np.unique(X1[d], return_counts = True)
+            v2, count2 = np.unique(X2[d], return_counts = True)
+            #v1, count2 = np.unique(X2[d], return_counts = True)
+            q1[v1, :] = (np.exp(dig_alpha[d, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
+            q2[v2, :] = (np.exp(dig_alpha[d, :].reshape(-1, 1) + dig_beta2[:, v2]) * count2).T
             q[v, :] /= q[v, :].sum(axis = 1, keepdims = True)
+            
 
             # alpha, beta
-            alpha_new[d, :] += count.dot(q[v])
+            alpha_new[d, :] += count1.dot(q1[v1])
             #print("alpha_new->",alpha_new)
             #print("count",count.dot(q[v]))
             #print("q[v]", q[v])
-            beta_new[:, v] += count * q[v].T
+            beta_new1[:, v1] += count1 * q1[v1].T
             
             
             alpha = alpha_new.copy()
-            beta = beta_new.copy()
+            beta1 = beta_new1.copy()
     
             theta_est = np.array([np.random.dirichlet(a) for a in alpha])
-            phi_est = np.array([np.random.dirichlet(b) for b in beta])
+            phi_est = np.array([np.random.dirichlet(b) for b in beta1])
         t3 = time.time()
         elapsed_time = t3-t1
         print(f"経過時間：{elapsed_time}")
@@ -133,13 +136,14 @@ if __name__ == "__main__":
         ari = adjusted_rand_score(theta_est.argmax(axis=1),label)
         print(f"ARI->{ari}")
         
+        """
         # 対数尤度計算   
-        for (d, W_d) in enumerate(data):
+        for (d, W_d) in enumerate(X1):
             #print(f"log_W_d->{W_d}")
             #print(f"log_phi_est->\n{phi_est[:, W_d]}")
             #print(f"log_phi_est0->\n{phi_est[:, 2]}")
             likelihood[t] += np.log(theta_est[d, :].dot(phi_est[:, W_d])).sum()
-        
+        """
     
     import matplotlib.pyplot as plt
     plt.figure(figsize=(13,9))
