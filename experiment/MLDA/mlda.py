@@ -246,6 +246,8 @@ def main():
     data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x2.txt" , dtype=np.int32) )
     data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x3.txt" , dtype=np.int32) )
     data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x4.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x5.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x6.txt" , dtype=np.int32) )
     label.append(np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_z.txt" , dtype=np.int32))
     #for i in range(30):
     #mlda( data, label , topic, 100, "learn_result" )
