@@ -66,7 +66,7 @@ if __name__ == "__main__":
             for i3 in range(i2):
                 W_data.append(v[i1])
         data.append(W_data)
-    print("data->",data)
+    #print("data->",data)
 
     #print(f"W->\n{W[0]}")
     #print(f"data->\n{data[0]}")

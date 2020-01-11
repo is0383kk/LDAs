@@ -202,19 +202,26 @@ def mlda( data, label , K, num_itr=epoch_num, save_dir="model", load_dir=None ):
                 lik += calc_liklihood( data[m], n_dz, n_mzw[m], n_mz[m], K, dims[m] )
         liks.append( lik )
        
+        t3 = time.time()       
         #plot( n_dz, liks, D, K )
-    t2 = time.time()
-    # 経過時間を表示
-    elapsed_time = t2-t1
-    file_name = "./time.txt"
-    try:
-        file = open(file_name, 'a')
-        file.write(str(elapsed_time)+"\n")
-    except Exception as e:
-        print(e)
-    finally:
-        file.close()
-    print(f"経過時間：{elapsed_time}")
+        elapsed_time = t3-t1
+        # 経過時間を表示
+        
+        doc_dopics = np.argmax( n_dz , 1 )
+        #doc_dopics = doc_dopics[::-1]
+        #print(f"doc_dopics -> {doc_dopics}")
+        #print(f"label -> {label[0]}")
+        ari = adjusted_rand_score(doc_dopics,label[0])
+        print("ari->",ari)    
+        file_name = "./time.txt"
+        try:
+            file = open(file_name, 'a')
+            file.write(str(elapsed_time)+"\n")
+        except Exception as e:
+            print(e)
+        finally:
+            file.close()
+        print(f"経過時間：{elapsed_time}")
     
     save_model( save_dir, n_dz, n_mzw, n_mz, M, dims )
     np_liks = np.array(liks)
@@ -244,16 +251,16 @@ def main():
     label = []
     data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x1.txt" , dtype=np.int32) )
     data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x2.txt" , dtype=np.int32) )
-    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x3.txt" , dtype=np.int32) )
-    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x4.txt" , dtype=np.int32) )
-    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x5.txt" , dtype=np.int32) )
-    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x6.txt" , dtype=np.int32) )
+    #data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x3.txt" , dtype=np.int32) )
+    #data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x4.txt" , dtype=np.int32) )
+    #data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x5.txt" , dtype=np.int32) )
+    #data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x6.txt" , dtype=np.int32) )
     label.append(np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_z.txt" , dtype=np.int32))
     #for i in range(30):
-    #mlda( data, label , topic, 100, "learn_result" )
+    mlda( data, label , topic, 100, "learn_result" )
 
     #data[1] = None
-    mlda( data, label , topic, 20, "recog_result" , "learn_result" )
+    #mlda( data, label , topic, 20, "recog_result" , "learn_result" )
 
 
 if __name__ == '__main__':
