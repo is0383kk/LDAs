@@ -28,27 +28,37 @@ def make_data(N, hist):
         X.append(x_data)
     return X
 
-def save_model( save_dir, alpha, beta1, beta2):
+def save_model( save_dir, model):
     try:
         os.mkdir( save_dir )
     except:
         pass
 
-    with open( os.path.join( save_dir, "model.pickle" ), "wb" ) as f:
-        pickle.dump( [alpha, beta1, beta2], f )
+    with open( os.path.join( save_dir,"model.pickle" ), "wb" ) as f:
+        pickle.dump( q, f )
+
+def save_model( save_dir, model):
+    try:
+        os.mkdir( save_dir )
+    except:
+        pass
+
+    with open( os.path.join( save_dir,"model.pickle" ), "wb" ) as f:
+        pickle.dump( q, f )
 
 def load_model( load_dir ):
     model_path = os.path.join( load_dir, "model.pickle" )
     with open(model_path, "rb" ) as f:
-        a, b1, b2 = pickle.load( f )
+        q = pickle.load( f )
 
-    return a, b1, b2
+    return q
 
 if __name__ == "__main__":
 
     # initialize parameters
     K = 10
-    train_mode = False
+    train_mode = True
+    #train_mode = False
     print(train_mode)
     save_dir = "./learn_result"
     data = []
@@ -58,7 +68,7 @@ if __name__ == "__main__":
     D = data[0].shape[0]
     alpha0, betax1, betax2 = 0.1, 0.1, 0.1
     alpha = alpha0 + np.random.rand(D, K)
-    theta = normalized_random_array(D, K)
+    
     V = []
     N = []
     X = []
@@ -79,6 +89,10 @@ if __name__ == "__main__":
     plt_epoch_list = np.arange(T)
     likelihood = np.zeros(T)
     t1 = time.time() # 処理前の時刻
+    if train_mode == False:
+        q_test, d_a, d_b1, d_b2 = load_model( "./learn_result" )
+        print(d_a) 
+    
     for t in range(T):
         print(f"Epoch->{t}")
         dig_alpha = digamma(alpha) - digamma(alpha.sum(axis = 1, keepdims = True))
@@ -93,23 +107,35 @@ if __name__ == "__main__":
             q = np.zeros((V[0], K)) + np.zeros((V[1], K))
             v1, count1 = np.unique(X[0][d], return_counts = True)
             v2, count2 = np.unique(X[1][d], return_counts = True)
-            q[v1, :] = (np.exp(dig_alpha[d, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
-            q[v2, :] += (np.exp(dig_beta2[:, v2]) * count2).T
-            q[v1, :] /= q[v1, :].sum(axis = 1, keepdims = True)
-            q[v2, :] /= q[v2, :].sum(axis = 1, keepdims = True)
-
-
-            # alpha, beta
-            alpha_new[d, :] += count1.dot(q[v1]) + count2.dot(q[v2])
-            beta_new1[:, v1] += count1 * q[v1].T
-            beta_new2[:, v2] += count2 * q[v2].T
+            
+            if train_mode:
+                q[v1, :] = (np.exp(dig_alpha[d, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
+                q[v2, :] += (np.exp(dig_beta2[:, v2]) * count2).T
+                q[v1, :] /= q[v1, :].sum(axis = 1, keepdims = True)
+                q[v2, :] /= q[v2, :].sum(axis = 1, keepdims = True)
+                
+                # alpha, beta
+                alpha_new[d, :] += count1.dot(q[v1]) + count2.dot(q[v2])
+                beta_new1[:, v1] += count1 * q[v1].T
+                beta_new2[:, v2] += count2 * q[v2].T
+            else:
+                q_test = load_model( "./learn_result" )
+                q_test[v1, :] = (np.exp(d_a[d, :].reshape(-1, 1) + d_b1[:, v1]) * count1).T
+                q_test[v2, :] += (np.exp(d_b2[:, v2]) * count2).T
+                q_test[v1, :] /= q_test[v1, :].sum(axis = 1, keepdims = True)
+                q_test[v2, :] /= q_test[v2, :].sum(axis = 1, keepdims = True)
+                alpha_new[d, :] += count1.dot(q_test[v1]) + count2.dot(q_test[v2])
+                beta_new1[:, v1] += count1 * q_test[v1].T
+                beta_new2[:, v2] += count2 * q_test[v2].T
     
-        if train_mode:        
-            alpha = alpha_new.copy()
-            beta1 = beta_new1.copy()
-            beta2 = beta_new2.copy()
-        else:
-            alpha, beta1, beta2 = load_model( "./learn_result" )
+            
+    
+              
+        alpha = alpha_new.copy()
+        beta1 = beta_new1.copy()
+        beta2 = beta_new2.copy()
+        
+        
         
 
            
@@ -119,23 +145,17 @@ if __name__ == "__main__":
         t3 = time.time()
         elapsed_time = t3-t1
         print(f"経過時間：{elapsed_time}")
+        print("theta",theta_est.argmax(axis=1))
         ari = adjusted_rand_score(theta_est.argmax(axis=1),label)
         print(f"ARI->{ari}")
-      
+        
 
-        """
-        # 対数尤度計算
-        for (d, W_d) in enumerate(X[0]):
-            #print(f"log_W_d->{W_d}")
-            #print(f"log_phi_est->\n{phi_est[:, W_d]}")
-            #print(f"log_phi_est0->\n{phi_est[:, 2]}")
-            likelihood[t] += np.log(theta_est[d, :].dot(phi_est1[:, W_d])).sum()
-            likelihood[t] += np.log(theta_est[d, :].dot(phi_est2[:, W_d])).sum()
-        """
     if train_mode:
-        save_model("./learn_result", alpha, beta1, beta2)
-
-    print(sum(q[0]))      
+        save_model( "./learn_result", q)
+        print(sum(q),sum(q[0]))
+    else:
+        print(sum(q_test),sum(q_test[0]))
+          
     import matplotlib.pyplot as plt
     plt.figure(figsize=(13,9))
     plt.tick_params(labelsize=18)
