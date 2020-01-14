@@ -62,9 +62,10 @@ if __name__ == "__main__":
     print(train_mode)
     save_dir = "./learn_result"
     data = []
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"te_x1.txt" , dtype=np.int32) )
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"te_x2.txt" , dtype=np.int32) )
-    label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
+    data.append( np.loadtxt( "../k"+str(K)+"tactile.txt" , dtype=np.int32)*5 )
+    data.append( np.loadtxt( "../k"+str(K)+"audio.txt" , dtype=np.int32) )
+    #data.append( np.loadtxt( "../k"+str(topic)+"vision.txt" , dtype=np.int32) )
+    #label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = data[0].shape[0]
     alpha0, betax1, betax2 = 0.1, 0.1, 0.1
     alpha = alpha0 + np.random.rand(D, K)
@@ -75,8 +76,11 @@ if __name__ == "__main__":
     beta = []
     for i in range(len(data)):
         V.append(data[i].shape[1])
-        N.append(np.full(D,V[i]))
-        X.append(make_data(N[i], data[i]))
+     
+    N.append(np.full(D,V[0]))
+    N.append(np.full(D,V[1]))    
+    X.append(make_data(N[0], data[0]))   
+    X.append(make_data(N[1], data[1]))   
     beta1 = betax1 + np.random.rand(K, V[0])    
     beta2 = betax2 + np.random.rand(K, V[1])
     
@@ -102,20 +106,23 @@ if __name__ == "__main__":
         alpha_new = np.ones((D, K)) * alpha0
         beta_new1 = np.ones((K, V[0])) * betax1
         beta_new2 = np.ones((K, V[1])) * betax2
-        q = np.zeros((V[0]+V[1], K)) 
-        for (d1, N2_d) in enumerate(N[0]):    
+        
+        for (d1, N2_d) in enumerate(N[0]):
+            q = np.zeros((V[0]+V[1], K)) 
             v1, count1 = np.unique(X[0][d1], return_counts = True)
             q[v1, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
             q[v1, :] /= q[v1, :].sum(axis = 1, keepdims = True)
             alpha_new[d1, :] += count1.dot(q[v1])
             beta_new1[:, v1] += count1 * q[v1].T
-        for (d2, N2_d) in enumerate(N[1]):
-            # q
-            v2, count2 = np.unique(X[1][d2], return_counts = True)
-            q[v2, :] += (np.exp(dig_beta2[:, v2]) * count2).T
-            q[v2, :] /= q[v2, :].sum(axis = 1, keepdims = True)
-            alpha_new[d2, :]+= count2.dot(q[v2])
-            beta_new2[:, v2] += count2 * q[v2].T
+            for (d2, N2_d) in enumerate(N[1]):
+                # q
+                v2, count2 = np.unique(X[1][d2], return_counts = True)
+                q[v2, :] += (np.exp(dig_beta2[:, v2]) * count2).T
+                q[v2, :] /= q[v2, :].sum(axis = 1, keepdims = True)
+                alpha_new[d2, :]+= count2.dot(q[v2])
+                beta_new2[:, v2] += count2 * q[v2].T
+            
+    
             
     
               
@@ -134,8 +141,8 @@ if __name__ == "__main__":
         elapsed_time = t3-t1
         print(f"経過時間：{elapsed_time}")
         print("theta",theta_est.argmax(axis=1))
-        ari = adjusted_rand_score(theta_est.argmax(axis=1),label)
-        print(f"ARI->{ari}")
+        #ari = adjusted_rand_score(theta_est.argmax(axis=1),label)
+        #print(f"ARI->{ari}")
         
 
     if train_mode:

@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score
 
 
 parser = argparse.ArgumentParser(description='MLDA')
-parser.add_argument('--k', type=int, default=30, metavar='K',
+parser.add_argument('--k', type=int, default=10, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 
@@ -224,13 +224,13 @@ def mlda( data, label , K, num_itr=epoch_num, save_dir="model", load_dir=None ):
             save_model( it , save_dir, n_dz, n_mzw, n_mz, M, dims )
         
         doc_dopics = np.argmax( n_dz , 1 )
-        ari = adjusted_rand_score(doc_dopics, label[0])
-        arii = adjusted_rand_score(doc_dopics[::-1], label[0])
-        acc = accuracy_score(label[0], doc_dopics)
-        acci = accuracy_score(label[0], doc_dopics[::-1])
+        #ari = adjusted_rand_score(doc_dopics, label[0])
+        #arii = adjusted_rand_score(doc_dopics[::-1], label[0])
+        #acc = accuracy_score(label[0], doc_dopics)
+        #acci = accuracy_score(label[0], doc_dopics[::-1])
         print("doc_dopics->", doc_dopics)
-        print("label->", label[0])
-        print(f"ARI:{ari}, ARII:{arii}, ACC:{acc}, ACCI:{acci}")
+        #print("label->", label[0])
+        #print(f"ARI:{ari}, ARII:{arii}, ACC:{acc}, ACCI:{acci}")
         
     np_liks = np.array(liks)
     #doc_dopics = doc_dopics[::-1]
@@ -268,9 +268,9 @@ def main():
     data = []
     label = []
     #data.append( np.loadtxt( "./k10word.txt" , dtype=np.int32)*10 )
-    data.append( np.loadtxt( "../k"+str(topic)+"tactile.txt" , dtype=np.int32)*5 )
-    data.append( np.loadtxt( "../k"+str(topic)+"audio.txt" , dtype=np.int32) )
-    data.append( np.loadtxt( "../k"+str(topic)+"vision.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../k"+str(topic)+"tactile.txt" , dtype=np.int32) )
+    #data.append( np.loadtxt( "../k"+str(topic)+"audio.txt" , dtype=np.int32) )
+    #data.append( np.loadtxt( "../k"+str(topic)+"vision.txt" , dtype=np.int32) )
     label.append(np.loadtxt( "../k"+str(topic)+"label.txt" , dtype=np.int32))
     #for i in range(30):
     mlda( data, label , topic, 100, "learn_result" )

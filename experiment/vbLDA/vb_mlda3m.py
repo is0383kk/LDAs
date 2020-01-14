@@ -64,9 +64,10 @@ if __name__ == "__main__":
     data = []
     data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"te_x1.txt" , dtype=np.int32) )
     data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"te_x2.txt" , dtype=np.int32) )
+    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"te_x3.txt" , dtype=np.int32) )
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = data[0].shape[0]
-    alpha0, betax1, betax2 = 0.1, 0.1, 0.1
+    alpha0, betax1, betax2, betax3 = 0.1, 0.1, 0.1, 0.1
     alpha = alpha0 + np.random.rand(D, K)
     
     V = []
@@ -79,6 +80,7 @@ if __name__ == "__main__":
         X.append(make_data(N[i], data[i]))
     beta1 = betax1 + np.random.rand(K, V[0])    
     beta2 = betax2 + np.random.rand(K, V[1])
+    beta3 = betax3 + np.random.rand(K, V[2])
     
 
     
@@ -98,12 +100,15 @@ if __name__ == "__main__":
         dig_alpha = digamma(alpha) - digamma(alpha.sum(axis = 1, keepdims = True))
         dig_beta1 = digamma(beta1) - digamma(beta1.sum(axis = 1, keepdims = True))
         dig_beta2 = digamma(beta2) - digamma(beta2.sum(axis = 1, keepdims = True))
+        dig_beta3 = digamma(beta3) - digamma(beta3.sum(axis = 1, keepdims = True))
 
         alpha_new = np.ones((D, K)) * alpha0
         beta_new1 = np.ones((K, V[0])) * betax1
         beta_new2 = np.ones((K, V[1])) * betax2
-        q = np.zeros((V[0]+V[1], K)) 
-        for (d1, N2_d) in enumerate(N[0]):    
+        beta_new3 = np.ones((K, V[2])) * betax3
+        q = np.zeros((V[0]+V[1]+V[2], K)) 
+        for (d1, N2_d) in enumerate(N[0]):
+            
             v1, count1 = np.unique(X[0][d1], return_counts = True)
             q[v1, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
             q[v1, :] /= q[v1, :].sum(axis = 1, keepdims = True)
@@ -116,6 +121,14 @@ if __name__ == "__main__":
             q[v2, :] /= q[v2, :].sum(axis = 1, keepdims = True)
             alpha_new[d2, :]+= count2.dot(q[v2])
             beta_new2[:, v2] += count2 * q[v2].T
+        for (d3, N3_d) in enumerate(N[2]):
+            # q
+            v3, count3 = np.unique(X[2][d3], return_counts = True)
+            q[v3, :] += (np.exp(dig_beta3[:, v3]) * count3).T
+            q[v3, :] /= q[v3, :].sum(axis = 1, keepdims = True)
+            alpha_new[d3, :]+= count3.dot(q[v3])
+            beta_new3[:, v3] += count3 * q[v3].T
+    
             
     
               
