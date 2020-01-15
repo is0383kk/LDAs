@@ -30,9 +30,9 @@ if __name__ == "__main__":
 
     # initialize parameters
     train_mode = True
-    train_mode = False
-    K = 3
-    W = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr.txt" , dtype=np.int32)
+    #train_mode = False
+    K = 50
+    W = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x5.txt" , dtype=np.int32)
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = W.shape[0]
     V = W.shape[1]

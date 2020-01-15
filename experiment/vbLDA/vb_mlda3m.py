@@ -56,15 +56,15 @@ def load_model( load_dir ):
 if __name__ == "__main__":
 
     # initialize parameters
-    K = 10
+    K = 50
     train_mode = True
     #train_mode = False
     print(train_mode)
     save_dir = "./learn_result"
     data = []
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"te_x1.txt" , dtype=np.int32) )
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"te_x2.txt" , dtype=np.int32) )
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"te_x3.txt" , dtype=np.int32) )
+    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x1.txt" , dtype=np.int32) )
+    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x2.txt" , dtype=np.int32) )
+    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x3.txt" , dtype=np.int32) )
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = data[0].shape[0]
     alpha0, betax1, betax2, betax3 = 0.1, 0.1, 0.1, 0.1
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     
     
     # 変分推論
-    T = 100
+    T = 200
     plt_epoch_list = np.arange(T)
     likelihood = np.zeros(T)
     t1 = time.time() # 処理前の時刻

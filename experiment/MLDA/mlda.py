@@ -10,7 +10,7 @@ import argparse
 from sklearn.metrics.cluster import adjusted_rand_score
 
 parser = argparse.ArgumentParser(description='MLDA')
-parser.add_argument('--k', type=int, default=10, metavar='K',
+parser.add_argument('--k', type=int, default=50, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 
@@ -249,15 +249,15 @@ def main():
     topic = args.k
     data = []
     label = []
-    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x1.txt" , dtype=np.int32) )
-    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x2.txt" , dtype=np.int32) )
-    #data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x3.txt" , dtype=np.int32) )
-    #data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x4.txt" , dtype=np.int32) )
-    #data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x5.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_x1.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_x2.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_x3.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_x4.txt" , dtype=np.int32) )
+    data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_x5.txt" , dtype=np.int32) )
     #data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x6.txt" , dtype=np.int32) )
-    label.append(np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_z.txt" , dtype=np.int32))
+    label.append(np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_z.txt" , dtype=np.int32))
     #for i in range(30):
-    mlda( data, label , topic, 100, "learn_result" )
+    mlda( data, label , topic, 2000, "learn_result" )
 
     #data[1] = None
     #mlda( data, label , topic, 20, "recog_result" , "learn_result" )

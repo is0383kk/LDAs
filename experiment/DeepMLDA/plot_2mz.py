@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
 
 parser = argparse.ArgumentParser(description='Plot latent variable:Amortized MLDA')
-parser.add_argument('--k', type=int, default=10, metavar='K',
+parser.add_argument('--k', type=int, default=50, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 
@@ -111,13 +111,14 @@ def visualize_zs(zs, labels, mode, ari):
     #plt.figure(figsize=(10,10))
     fig = plt.figure(figsize=(10,10))
     #ax = Axes3D(fig)
-    points = TSNE(n_components=2, random_state=0).fit_transform(zs)
+    points = PCA(n_components=2, random_state=0).fit_transform(zs)
     for p, l in zip(points, labels):
         plt.title(f"Latent space:Top:{str(define_topic)}, Doc:{str(batch)}, ARI:{ari}", fontsize=22)
         plt.xlabel("Latent space:xlabel", fontsize=21)
         plt.ylabel("Latent space:ylabel", fontsize=21)
         plt.tick_params(labelsize=17)
-        plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
+        #plt.scatter(p[0], p[1], marker="${}$".format(l),c=colors[l],s=100)
+        plt.scatter(p[0], p[1], marker="${}$".format(l),s=100)
         #ax.scatter(p[0], p[1], p[2], marker="${}$".format(l),c=colors[l])
     plt.savefig(f'./sample_z/{mode}k{str(define_topic)}d{str(te_x1.shape[0])}ari{int(ari*100)}.png')
 
@@ -136,27 +137,27 @@ for x,t in enumerate(trainloader):
     print("label",tr_label)
     print("pred",predict_tr_label)
     print(f"Joint:ARI->{tr_ari}")
-    #visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN", tr_ari)
+    visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN", tr_ari)
     break
 
 score = []
-for i in range(30):
-    for x,t in enumerate(testloader):
-        print("***********Joint multi-modal inference***********")
-        #print(f"te_x1 ->{t[0]}")
-        #print(f"te_x1 ->{t[1]}")
-        mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0], t[1])
-        te_z = z_hoge.cpu()
-        te_label = t[2].cpu()
-        #print(f"te_label->{te_label}")
-        predict_te_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
-        print(f"pr_label->{predict_te_label}")
-        #print(f"predict_train_label->{predict_train_label}")
-        te_ari = adjusted_rand_score(te_label,predict_te_label)
-        score.append(te_ari)
-        print(f"Joint:ARI->{te_ari}")
-        #visualize_zs(te_z.detach().numpy(), te_label.detach().numpy(), "TEST", te_ari)
-        break
+#for i in range(30):
+for x,t in enumerate(testloader):
+    print("***********Joint multi-modal inference***********")
+    #print(f"te_x1 ->{t[0]}")
+    #print(f"te_x1 ->{t[1]}")
+    mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = model(t[0], t[1])
+    te_z = z_hoge.cpu()
+    te_label = t[2].cpu()
+    #print(f"te_label->{te_label}")
+    predict_te_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
+    print(f"pr_label->{predict_te_label}")
+    #print(f"predict_train_label->{predict_train_label}")
+    te_ari = adjusted_rand_score(te_label,predict_te_label)
+    score.append(te_ari)
+    print(f"Joint:ARI->{te_ari}")
+    #visualize_zs(te_z.detach().numpy(), te_label.detach().numpy(), "TEST", te_ari)
+    break
 print("平均ARI", sum(score) / len(score))
 """
 for x,t in enumerate(crossmodalloader):
