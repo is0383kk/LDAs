@@ -56,7 +56,7 @@ def load_model( load_dir ):
 if __name__ == "__main__":
 
     # initialize parameters
-    K = 50
+    K = 10
     train_mode = True
     #train_mode = False
     print(train_mode)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x3.txt" , dtype=np.int32) )
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = data[0].shape[0]
-    alpha0, betax1, betax2, betax3 = 0.1, 0.1, 0.1, 0.1
+    alpha0, betax1, betax2, betax3 = 0.1, 1.0, 1.0, 1.0
     alpha = alpha0 + np.random.rand(D, K)
     
     V = []
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     
     
     # 変分推論
-    T = 200
+    T = 10000
     plt_epoch_list = np.arange(T)
     likelihood = np.zeros(T)
     t1 = time.time() # 処理前の時刻
@@ -106,28 +106,26 @@ if __name__ == "__main__":
         beta_new1 = np.ones((K, V[0])) * betax1
         beta_new2 = np.ones((K, V[1])) * betax2
         beta_new3 = np.ones((K, V[2])) * betax3
-        q = np.zeros((V[0]+V[1]+V[2], K)) 
+        
         for (d1, N2_d) in enumerate(N[0]):
-            
+            q = np.zeros((V[0]+V[1]+V[2], K)) 
             v1, count1 = np.unique(X[0][d1], return_counts = True)
+            v2, count2 = np.unique(X[1][d1], return_counts = True)
+            v3, count3 = np.unique(X[2][d1], return_counts = True)
             q[v1, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
             q[v1, :] /= q[v1, :].sum(axis = 1, keepdims = True)
-            alpha_new[d1, :] += count1.dot(q[v1])
-            beta_new1[:, v1] += count1 * q[v1].T
-        for (d2, N2_d) in enumerate(N[1]):
-            # q
-            v2, count2 = np.unique(X[1][d2], return_counts = True)
-            q[v2, :] += (np.exp(dig_beta2[:, v2]) * count2).T
+            q[v2, :] += (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta2[:, v2]) * count2).T
             q[v2, :] /= q[v2, :].sum(axis = 1, keepdims = True)
-            alpha_new[d2, :]+= count2.dot(q[v2])
-            beta_new2[:, v2] += count2 * q[v2].T
-        for (d3, N3_d) in enumerate(N[2]):
-            # q
-            v3, count3 = np.unique(X[2][d3], return_counts = True)
-            q[v3, :] += (np.exp(dig_beta3[:, v3]) * count3).T
+            q[v3, :] += (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta3[:, v3]) * count3).T
             q[v3, :] /= q[v3, :].sum(axis = 1, keepdims = True)
-            alpha_new[d3, :]+= count3.dot(q[v3])
+            alpha_new[d1, :] += count1.dot(q[v1])
+            alpha_new[d1, :] += count2.dot(q[v2])
+            alpha_new[d1, :] += count3.dot(q[v3])
+            beta_new1[:, v1] += count1 * q[v1].T
+            beta_new2[:, v2] += count2 * q[v2].T
             beta_new3[:, v3] += count3 * q[v3].T
+       
+            
     
             
     
@@ -135,6 +133,7 @@ if __name__ == "__main__":
         alpha = alpha_new.copy()
         beta1 = beta_new1.copy()
         beta2 = beta_new2.copy()
+        beta3 = beta_new3.copy()
         
         
         
@@ -143,10 +142,12 @@ if __name__ == "__main__":
         theta_est = np.array([np.random.dirichlet(a) for a in alpha])
         phi_est1 = np.array([np.random.dirichlet(b) for b in beta1])
         phi_est2 = np.array([np.random.dirichlet(b) for b in beta2])
+        phi_est3 = np.array([np.random.dirichlet(b) for b in beta3])
         t3 = time.time()
         elapsed_time = t3-t1
-        print(f"経過時間：{elapsed_time}")
+        
         print("theta",theta_est.argmax(axis=1))
+        print(f"経過時間：{elapsed_time}")
         ari = adjusted_rand_score(theta_est.argmax(axis=1),label)
         print(f"ARI->{ari}")
         

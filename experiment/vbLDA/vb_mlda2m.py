@@ -56,7 +56,7 @@ def load_model( load_dir ):
 if __name__ == "__main__":
 
     # initialize parameters
-    K = 50
+    K = 10
     train_mode = True
     #train_mode = False
     print(train_mode)

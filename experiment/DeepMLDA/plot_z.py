@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
 
 parser = argparse.ArgumentParser(description='Plot latent variable:Amortized MLDA')
-parser.add_argument('--k', type=int, default=30, metavar='K',
+parser.add_argument('--k', type=int, default=10, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 

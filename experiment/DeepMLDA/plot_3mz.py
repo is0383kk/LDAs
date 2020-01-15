@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
 
 parser = argparse.ArgumentParser(description='Plot latent variable:Amortized MLDA')
-parser.add_argument('--k', type=int, default=30, metavar='K',
+parser.add_argument('--k', type=int, default=10, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 
@@ -116,7 +116,7 @@ def visualize_zs(zs, labels, mode, ari):
     #plt.figure(figsize=(10,10))
     fig = plt.figure(figsize=(10,10))
     #ax = Axes3D(fig)
-    points = PCA(n_components=2, random_state=0).fit_transform(zs)
+    points = TSNE(n_components=2, random_state=0).fit_transform(zs)
     for p, l in zip(points, labels):
         plt.title(f"Latent space:Top:{str(define_topic)}, Doc:{str(batch)}, ARI:{ari}", fontsize=22)
         plt.xlabel("Latent space:xlabel", fontsize=21)
