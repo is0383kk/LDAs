@@ -58,7 +58,7 @@ from gensim.matutils import Sparse2Corpus
     default=False
 )
 def main(cuda,batch_size,epochs,top_words,testing_mode):#上のコマンドライン引数
-    define_topic = 50 # トピックの数を事前に定義
+    define_topic = 30 # トピックの数を事前に定義
     hist = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr.txt" , dtype=float)
     label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=float)
     test_hist = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te.txt" , dtype=float)

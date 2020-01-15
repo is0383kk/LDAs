@@ -85,7 +85,7 @@ if __name__ == "__main__":
     
     
     # 変分推論
-    T = 200
+    T = 10000
     plt_epoch_list = np.arange(T)
     likelihood = np.zeros(T)
     t1 = time.time() # 処理前の時刻
@@ -102,20 +102,21 @@ if __name__ == "__main__":
         alpha_new = np.ones((D, K)) * alpha0
         beta_new1 = np.ones((K, V[0])) * betax1
         beta_new2 = np.ones((K, V[1])) * betax2
-        q = np.zeros((V[0]+V[1], K)) 
+        
         for (d1, N2_d) in enumerate(N[0]):    
+            q = np.zeros((V[0]+V[1], K)) 
             v1, count1 = np.unique(X[0][d1], return_counts = True)
+            v2, count2 = np.unique(X[1][d1], return_counts = True)
             q[v1, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
+            q[v2, :] += (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta2[:, v2]) * count2).T
             q[v1, :] /= q[v1, :].sum(axis = 1, keepdims = True)
-            alpha_new[d1, :] += count1.dot(q[v1])
-            beta_new1[:, v1] += count1 * q[v1].T
-        for (d2, N2_d) in enumerate(N[1]):
-            # q
-            v2, count2 = np.unique(X[1][d2], return_counts = True)
-            q[v2, :] += (np.exp(dig_beta2[:, v2]) * count2).T
             q[v2, :] /= q[v2, :].sum(axis = 1, keepdims = True)
-            alpha_new[d2, :]+= count2.dot(q[v2])
-            beta_new2[:, v2] += count2 * q[v2].T
+            alpha_new[d1, :] += count1.dot(q[v1])
+            alpha_new[d1, :] += count2.dot(q[v2])
+            beta_new1[:, v1] += count1 * q[v1].T
+            beta_new2[:, v2] += count2 * q[v2].T       
+     
+            
             
     
               

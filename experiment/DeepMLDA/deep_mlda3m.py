@@ -53,7 +53,7 @@ import math
     '--k',
     help='トピック数を指定',
     type=int,
-    default=50
+    default=30
 )
 
 def main(cuda,batch_size,epochs,top_words,testing_mode,k):#上のコマンドライン引数
