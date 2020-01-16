@@ -56,7 +56,7 @@ def load_model( load_dir ):
 if __name__ == "__main__":
 
     # initialize parameters
-    K = 10
+    K = 15
     train_mode = True
     #train_mode = False
     print(train_mode)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x3.txt" , dtype=np.int32) )
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = data[0].shape[0]
-    alpha0, betax1, betax2, betax3 = 0.3, 15.0, 15.0, 15.0
+    alpha0, betax1, betax2, betax3 = 0.3, 3.0, 3.0, 3.0
     alpha = alpha0 + np.random.rand(D, K)
     
     V = []
