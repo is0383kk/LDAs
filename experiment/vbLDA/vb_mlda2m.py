@@ -66,7 +66,7 @@ if __name__ == "__main__":
     data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x2.txt" , dtype=np.int32) )
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = data[0].shape[0]
-    alpha0, betax1, betax2 = 0.1, 1.0, 1.0
+    alpha0, betax1, betax2 = 0.3, 13.0, 13.0
     alpha = alpha0 + np.random.rand(D, K)
     
     V = []
@@ -104,18 +104,31 @@ if __name__ == "__main__":
         beta_new2 = np.ones((K, V[1])) * betax2
         
         for (d1, N2_d) in enumerate(N[0]):    
+            """
             q = np.zeros((V[0]+V[1], K)) 
             v1, count1 = np.unique(X[0][d1], return_counts = True)
             v2, count2 = np.unique(X[1][d1], return_counts = True)
             q[v1, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
-            q[v2, :] += (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta2[:, v2]) * count2).T
+            q[v2, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta2[:, v2]) * count2).T
             q[v1, :] /= q[v1, :].sum(axis = 1, keepdims = True)
             q[v2, :] /= q[v2, :].sum(axis = 1, keepdims = True)
             alpha_new[d1, :] += count1.dot(q[v1])
             alpha_new[d1, :] += count2.dot(q[v2])
             beta_new1[:, v1] += count1 * q[v1].T
             beta_new2[:, v2] += count2 * q[v2].T       
-     
+            """
+            q1 = np.zeros((V[0], K)) 
+            q2 = np.zeros((V[1], K)) 
+            v1, count1 = np.unique(X[0][d1], return_counts = True)
+            v2, count2 = np.unique(X[1][d1], return_counts = True)
+            q1[v1, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
+            q2[v2, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta2[:, v2]) * count2).T
+            q1[v1, :] /= q1[v1, :].sum(axis = 1, keepdims = True)
+            q2[v2, :] /= q2[v2, :].sum(axis = 1, keepdims = True)
+            alpha_new[d1, :] += count1.dot(q1[v1])
+            alpha_new[d1, :] += count2.dot(q2[v2])
+            beta_new1[:, v1] += count1 * q1[v1].T
+            beta_new2[:, v2] += count2 * q2[v2].T       
             
             
     

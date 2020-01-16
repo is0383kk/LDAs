@@ -67,7 +67,7 @@ if __name__ == "__main__":
     data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x3.txt" , dtype=np.int32) )
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = data[0].shape[0]
-    alpha0, betax1, betax2, betax3 = 0.1, 1.0, 1.0, 1.0
+    alpha0, betax1, betax2, betax3 = 0.3, 15.0, 15.0, 15.0
     alpha = alpha0 + np.random.rand(D, K)
     
     V = []
@@ -108,22 +108,24 @@ if __name__ == "__main__":
         beta_new3 = np.ones((K, V[2])) * betax3
         
         for (d1, N2_d) in enumerate(N[0]):
-            q = np.zeros((V[0]+V[1]+V[2], K)) 
+            q1 = np.zeros((V[0], K)) 
+            q2 = np.zeros((V[1], K)) 
+            q3 = np.zeros((V[2], K)) 
             v1, count1 = np.unique(X[0][d1], return_counts = True)
             v2, count2 = np.unique(X[1][d1], return_counts = True)
             v3, count3 = np.unique(X[2][d1], return_counts = True)
-            q[v1, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
-            q[v1, :] /= q[v1, :].sum(axis = 1, keepdims = True)
-            q[v2, :] += (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta2[:, v2]) * count2).T
-            q[v2, :] /= q[v2, :].sum(axis = 1, keepdims = True)
-            q[v3, :] += (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta3[:, v3]) * count3).T
-            q[v3, :] /= q[v3, :].sum(axis = 1, keepdims = True)
-            alpha_new[d1, :] += count1.dot(q[v1])
-            alpha_new[d1, :] += count2.dot(q[v2])
-            alpha_new[d1, :] += count3.dot(q[v3])
-            beta_new1[:, v1] += count1 * q[v1].T
-            beta_new2[:, v2] += count2 * q[v2].T
-            beta_new3[:, v3] += count3 * q[v3].T
+            q1[v1, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
+            q2[v2, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta2[:, v2]) * count2).T
+            q3[v3, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta3[:, v3]) * count3).T
+            q1[v1, :] /= q1[v1, :].sum(axis = 1, keepdims = True)
+            q2[v2, :] /= q2[v2, :].sum(axis = 1, keepdims = True)
+            q3[v3, :] /= q3[v3, :].sum(axis = 1, keepdims = True)
+            alpha_new[d1, :] += count1.dot(q1[v1])
+            alpha_new[d1, :] += count2.dot(q2[v2])
+            alpha_new[d1, :] += count3.dot(q3[v3])
+            beta_new1[:, v1] += count1 * q1[v1].T
+            beta_new2[:, v2] += count2 * q2[v2].T
+            beta_new3[:, v3] += count3 * q3[v3].T
        
             
     
