@@ -56,7 +56,7 @@ def load_model( load_dir ):
 if __name__ == "__main__":
 
     # initialize parameters
-    K = 15
+    K = 10
     train_mode = True
     #train_mode = False
     print(train_mode)
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x2.txt" , dtype=np.int32) )
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = data[0].shape[0]
-    alpha0, betax1, betax2 = 0.3, 5.0, 5.0
+    alpha0, betax1, betax2 = 0.3, 18.0, 18.0
     alpha = alpha0 + np.random.rand(D, K)
     
     V = []
@@ -149,6 +149,7 @@ if __name__ == "__main__":
         print(f"経過時間：{elapsed_time}")
         print("theta",theta_est.argmax(axis=1))
         ari = adjusted_rand_score(theta_est.argmax(axis=1),label)
+        print(f"経過時間：{elapsed_time}")
         print(f"ARI->{ari}")
         
 

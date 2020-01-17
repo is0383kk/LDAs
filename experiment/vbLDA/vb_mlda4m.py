@@ -56,7 +56,7 @@ def load_model( load_dir ):
 if __name__ == "__main__":
 
     # initialize parameters
-    K = 10
+    K = 30
     train_mode = True
     #train_mode = False
     print(train_mode)
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x4.txt" , dtype=np.int32) )
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = data[0].shape[0]
-    alpha0, betax1, betax2, betax3, betax4 = 0.3, 14.0, 14.0, 14.0, 14.0
+    alpha0, betax1, betax2, betax3, betax4 = 0.3, 10.0, 9.0, 8.0, 7.0
     alpha = alpha0 + np.random.rand(D, K)
     
     V = []
@@ -125,7 +125,7 @@ if __name__ == "__main__":
             q1[v1, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T            
             q2[v2, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta2[:, v2]) * count2).T
             q3[v3, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta3[:, v3]) * count3).T
-            q4[v4, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta3[:, v4]) * count4).T
+            q4[v4, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta4[:, v4]) * count4).T
             
             
             q1[v1, :] /= q1[v1, :].sum(axis = 1, keepdims = True)
