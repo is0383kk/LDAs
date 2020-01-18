@@ -19,20 +19,21 @@ def save_model( save_dir, q):
         pass
 
     with open( os.path.join( save_dir, "model.pickle" ), "wb" ) as f:
-        pickle.dump( q, f )
+        pickle.dump( [a, b], f )
 
 def load_model( load_dir ):
     model_path = os.path.join( load_dir, "model.pickle" )
     with open(model_path, "rb" ) as f:
-        q = pickle.load( f )
-    return q
+        a, b = pickle.load( f )
+    return a, b
+    
 if __name__ == "__main__":
 
     # initialize parameters
     train_mode = True
-    train_mode = False
-    K = 3
-    W = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr.txt" , dtype=np.int32)
+    #train_mode = False
+    K = 10
+    W = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x5.txt" , dtype=np.int32)
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = W.shape[0]
     V = W.shape[1]
@@ -44,27 +45,6 @@ if __name__ == "__main__":
     beta = beta0 + np.random.rand(K, V)
     #theta = normalized_random_array(D, K)
     #phi = normalized_random_array(K, V)
-    """
-    # for generate documents
-    _theta = np.array([theta[:, :k+1].sum(axis = 1) for k in range(K)]).T
-    _phi = np.array([phi[:, :v+1].sum(axis = 1) for v in range(V)]).T
-
-    _Z = []
-    _W = []
-    #N = np.full(D, V)
-    for (d, N_d) in enumerate(N):
-        _Z.append((np.random.rand(N_d, 1) < _theta[d, :]).argmax(axis = 1))
-        _W.append((np.random.rand(N_d, 1) < _phi[_Z[-1], :]).argmax(axis = 1))
-
-    
-    # generate documents
-    #W, Z = [], []
-    #N = np.random.randint(100, 300, D)
-
-    for (d, N_d) in enumerate(N):
-        Z.append((np.random.rand(N_d, 1) < _theta[d, :]).argmax(axis = 1))
-        W.append((np.random.rand(N_d, 1) < _phi[Z[-1], :]).argmax(axis = 1))
-    """
     
     data = []
     for (d, N_d) in enumerate(N):
@@ -144,11 +124,8 @@ if __name__ == "__main__":
             likelihood[t] += np.log(theta_est[d, :].dot(phi_est[:, W_d])).sum()
         """
     if train_mode:
-        save_model( "./learn_result", q )
-        print(q,q[0],q[1])
-    else:
-        print(sum(q_test),sum(q_test[0]))
-    print("theta",theta_est.argmax(axis=1))
+        save_model( "./learn_result", dig_alpha, dig_beta )
+        
     import matplotlib.pyplot as plt
     plt.figure(figsize=(13,9))
     plt.tick_params(labelsize=18)

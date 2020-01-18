@@ -34,7 +34,7 @@ import math
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=200
+    default=100
 )
 @click.option(
     '--top-words',

@@ -28,30 +28,24 @@ def make_data(N, hist):
         X.append(x_data)
     return X
 
-def save_model( save_dir, model):
+def save_model( save_dir, a, b1, b2, b3 ):
     try:
         os.mkdir( save_dir )
     except:
         pass
 
     with open( os.path.join( save_dir,"model.pickle" ), "wb" ) as f:
-        pickle.dump( q, f )
+        pickle.dump( [a, b1, b2, b3], f )
 
-def save_model( save_dir, model):
-    try:
-        os.mkdir( save_dir )
-    except:
-        pass
 
-    with open( os.path.join( save_dir,"model.pickle" ), "wb" ) as f:
-        pickle.dump( q, f )
+
 
 def load_model( load_dir ):
     model_path = os.path.join( load_dir, "model.pickle" )
     with open(model_path, "rb" ) as f:
-        q = pickle.load( f )
+        a, b1, b2, b3 = pickle.load( f )
 
-    return q
+    return a, b1, b2, b3
 
 if __name__ == "__main__":
 
@@ -62,12 +56,12 @@ if __name__ == "__main__":
     print(train_mode)
     save_dir = "./learn_result"
     data = []
-    data.append( np.loadtxt( "../k"+str(K)+"tactile.txt" , dtype=np.int32)*5 )
-    data.append( np.loadtxt( "../k"+str(K)+"audio.txt" , dtype=np.int32) )
-    data.append( np.loadtxt( "../k"+str(K)+"vision.txt" , dtype=np.int32) )
-    #label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
+    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x1.txt" , dtype=np.int32) )
+    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x2.txt" , dtype=np.int32) )
+    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x3.txt" , dtype=np.int32) )
+    label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = data[0].shape[0]
-    alpha0, betax1, betax2, betax3 = 0.1, 0.1, 0.1, 0.1
+    alpha0, betax1, betax2, betax3 = 0.5, 18.0, 17.0, 16.0
     alpha = alpha0 + np.random.rand(D, K)
     
     V = []
@@ -76,8 +70,8 @@ if __name__ == "__main__":
     beta = []
     for i in range(len(data)):
         V.append(data[i].shape[1])
-        N.append(np.full(D,V[i])) 
-        X.append(make_data(N[i], data[i]))     
+        N.append(np.full(D,V[i]))
+        X.append(make_data(N[i], data[i]))
     beta1 = betax1 + np.random.rand(K, V[0])    
     beta2 = betax2 + np.random.rand(K, V[1])
     beta3 = betax3 + np.random.rand(K, V[2])
@@ -87,7 +81,7 @@ if __name__ == "__main__":
     
     
     # 変分推論
-    T = 100
+    T = 1000
     plt_epoch_list = np.arange(T)
     likelihood = np.zeros(T)
     t1 = time.time() # 処理前の時刻
@@ -96,7 +90,7 @@ if __name__ == "__main__":
         print(d_a) 
     
     for t in range(T):
-        print(f"Epoch->{t}")
+        print(f"m{len(data)}k{K}Epoch->{t}")
         dig_alpha = digamma(alpha) - digamma(alpha.sum(axis = 1, keepdims = True))
         dig_beta1 = digamma(beta1) - digamma(beta1.sum(axis = 1, keepdims = True))
         dig_beta2 = digamma(beta2) - digamma(beta2.sum(axis = 1, keepdims = True))
@@ -106,28 +100,33 @@ if __name__ == "__main__":
         beta_new1 = np.ones((K, V[0])) * betax1
         beta_new2 = np.ones((K, V[1])) * betax2
         beta_new3 = np.ones((K, V[2])) * betax3
-        q = np.zeros((V[0]+V[1]+V[2], K)) 
-        for (d1, N2_d) in enumerate(N[0]):
-            
+        
+        for (d1, N1_d) in enumerate(N[0]):
+            q1 = np.zeros((V[0], K)) 
             v1, count1 = np.unique(X[0][d1], return_counts = True)
-            q[v1, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
-            q[v1, :] /= q[v1, :].sum(axis = 1, keepdims = True)
-            alpha_new[d1, :] += count1.dot(q[v1])
-            beta_new1[:, v1] += count1 * q[v1].T
+            q1[v1, :] = (np.exp(dig_alpha[d1, :].reshape(-1, 1) + dig_beta1[:, v1]) * count1).T
+            q1[v1, :] /= q1[v1, :].sum(axis = 1, keepdims = True)
+            alpha_new[d1, :] += count1.dot(q1[v1])
+            beta_new1[:, v1] += count1 * q1[v1].T
+            
+        
         for (d2, N2_d) in enumerate(N[1]):
-            # q
+            q2 = np.zeros((V[1], K)) 
             v2, count2 = np.unique(X[1][d2], return_counts = True)
-            q[v2, :] += (np.exp(dig_beta2[:, v2]) * count2).T
-            q[v2, :] /= q[v2, :].sum(axis = 1, keepdims = True)
-            alpha_new[d2, :]+= count2.dot(q[v2])
-            beta_new2[:, v2] += count2 * q[v2].T
+            q2[v2, :] = (np.exp(dig_alpha[d2, :].reshape(-1, 1) + dig_beta2[:, v2]) * count2).T
+            q2[v2, :] /= q2[v2, :].sum(axis = 1, keepdims = True)
+            alpha_new[d2, :] += count2.dot(q2[v2])
+            beta_new2[:, v2] += count2 * q2[v2].T
+            
+        
         for (d3, N3_d) in enumerate(N[2]):
-            # q
+            q3 = np.zeros((V[2], K)) 
             v3, count3 = np.unique(X[2][d3], return_counts = True)
-            q[v3, :] += (np.exp(dig_beta3[:, v3]) * count3).T
-            q[v3, :] /= q[v3, :].sum(axis = 1, keepdims = True)
-            alpha_new[d3, :]+= count3.dot(q[v3])
-            beta_new3[:, v3] += count3 * q[v3].T
+            q3[v3, :] = (np.exp(dig_alpha[d3, :].reshape(-1, 1) + dig_beta3[:, v3]) * count3).T
+            q3[v3, :] /= q3[v3, :].sum(axis = 1, keepdims = True)
+            alpha_new[d3, :] += count3.dot(q3[v3])
+            beta_new3[:, v3] += count3 * q3[v3].T
+       
             
     
             
@@ -136,6 +135,7 @@ if __name__ == "__main__":
         alpha = alpha_new.copy()
         beta1 = beta_new1.copy()
         beta2 = beta_new2.copy()
+        beta3 = beta_new3.copy()
         
         
         
@@ -144,26 +144,37 @@ if __name__ == "__main__":
         theta_est = np.array([np.random.dirichlet(a) for a in alpha])
         phi_est1 = np.array([np.random.dirichlet(b) for b in beta1])
         phi_est2 = np.array([np.random.dirichlet(b) for b in beta2])
+        phi_est3 = np.array([np.random.dirichlet(b) for b in beta3])
+        
+        if train_mode:
+            save_model( "./learn_result", dig_alpha, dig_beta1, dig_beta2, dig_beta3)
+        
         t3 = time.time()
         elapsed_time = t3-t1
-        print(f"経過時間：{elapsed_time}")
-        print("theta",theta_est.argmax(axis=1))
-        #ari = adjusted_rand_score(theta_est.argmax(axis=1),label)
-        #print(f"ARI->{ari}")
         
+        print("theta",theta_est.argmax(axis=1))
+        print(f"経過時間：{elapsed_time}")
+        ari = adjusted_rand_score(theta_est.argmax(axis=1),label)
+        print(f"ARI->{ari}")
+        
+        
+        
+        # 対数尤度計算
+        for (d, W_d) in enumerate(X[0]):
+            likelihood[t] += np.log(theta_est[d, :].dot(phi_est1[:, W_d])).sum()
+        for (d, W_d) in enumerate(X[1]):
+            likelihood[t] += np.log(theta_est[d, :].dot(phi_est2[:, W_d])).sum()
+        for (d, W_d) in enumerate(X[2]):
+            likelihood[t] += np.log(theta_est[d, :].dot(phi_est3[:, W_d])).sum()
 
-    if train_mode:
-        save_model( "./learn_result", q)
-        print(sum(q),sum(q[0]))
-    else:
-        print(sum(q_test),sum(q_test[0]))
+    
           
     import matplotlib.pyplot as plt
-    plt.figure(figsize=(13,9))
+    plt.figure(figsize=(15,9))
     plt.tick_params(labelsize=18)
-    plt.title('LDA-vb(Topic='+ str(K) +'):Log likelihood',fontsize=24)
-    plt.xlabel('Epoch',fontsize=24)
-    plt.ylabel('Log likelihood',fontsize=24)
+    plt.title('MLDA-vb(M=' + str(len(data))+'K='+str(K)+'):Log likelihood',fontsize=22)
+    plt.xlabel('Epoch',fontsize=22)
+    plt.ylabel('Log likelihood',fontsize=22)
     plt.plot(plt_epoch_list,likelihood)
 
-    plt.savefig('liks.png')
+    plt.savefig('vb_m'+str(len(data))+'k'+str(K)+'liks.pdf')

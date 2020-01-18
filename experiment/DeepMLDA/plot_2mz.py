@@ -137,10 +137,11 @@ for x,t in enumerate(trainloader):
     print("label",tr_label)
     print("pred",predict_tr_label)
     print(f"Joint:ARI->{tr_ari}")
-    visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN", tr_ari)
+    #visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN", tr_ari)
     break
 
 score = []
+"""
 #for i in range(30):
 for x,t in enumerate(testloader):
     print("***********Joint multi-modal inference***********")
@@ -159,6 +160,7 @@ for x,t in enumerate(testloader):
     #visualize_zs(te_z.detach().numpy(), te_label.detach().numpy(), "TEST", te_ari)
     break
 print("平均ARI", sum(score) / len(score))
+"""
 """
 for x,t in enumerate(crossmodalloader):
     print("***********Cross-modal inference***********")

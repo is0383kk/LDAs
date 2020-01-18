@@ -178,5 +178,5 @@ def train(dataset: torch.utils.data.Dataset,
     plt.ylabel('Log likelihood',fontsize=24)
     plt.plot(plt_epoch_list,plt_loss_list)
 
-    plt.savefig('liks.png')
+    plt.savefig('m2'+str(num_topics)+'liks.png')
     torch.save(autoencoder.state_dict(), 'deepmlda2m.pth')
