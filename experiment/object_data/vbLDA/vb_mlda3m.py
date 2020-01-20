@@ -56,12 +56,14 @@ if __name__ == "__main__":
     print(train_mode)
     save_dir = "./learn_result"
     data = []
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x1.txt" , dtype=np.int32) )
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x2.txt" , dtype=np.int32) )
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x3.txt" , dtype=np.int32) )
-    label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
+    data = []
+    data.append(np.loadtxt( "../k"+str(K)+"tactile.txt" , dtype=np.int32) )
+    data.append(np.loadtxt( "../k"+str(K)+"audio.txt" , dtype=np.int32) )
+    data.append(np.loadtxt( "../k"+str(K)+"vision.txt" , dtype=np.int32) )
+   
+    label = np.loadtxt( "../k"+str(K)+"label.txt" , dtype=np.int32)
     D = data[0].shape[0]
-    alpha0, betax1, betax2, betax3 = 0.5, 18.0, 17.0, 16.0
+    alpha0, betax1, betax2, betax3 = 0.5, 10.0, 10.0, 10.0
     alpha = alpha0 + np.random.rand(D, K)
     
     V = []
@@ -81,7 +83,7 @@ if __name__ == "__main__":
     
     
     # 変分推論
-    T = 1000
+    T = 10000
     plt_epoch_list = np.arange(T)
     likelihood = np.zeros(T)
     t1 = time.time() # 処理前の時刻
@@ -158,7 +160,7 @@ if __name__ == "__main__":
         print(f"ARI->{ari}")
         
         
-        
+        """
         # 対数尤度計算
         for (d, W_d) in enumerate(X[0]):
             likelihood[t] += np.log(theta_est[d, :].dot(phi_est1[:, W_d])).sum()
@@ -166,7 +168,7 @@ if __name__ == "__main__":
             likelihood[t] += np.log(theta_est[d, :].dot(phi_est2[:, W_d])).sum()
         for (d, W_d) in enumerate(X[2]):
             likelihood[t] += np.log(theta_est[d, :].dot(phi_est3[:, W_d])).sum()
-
+        """
     
           
     import matplotlib.pyplot as plt

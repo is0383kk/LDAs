@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from sklearn.metrics.cluster import adjusted_rand_score
 
 parser = argparse.ArgumentParser(description='Plot latent variable:Amortized MLDA')
-parser.add_argument('--k', type=int, default=7, metavar='K',
+parser.add_argument('--k', type=int, default=10, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 
@@ -24,7 +24,7 @@ define_topic = args.k # トピックの数を事前に定義
 tr_x1 = np.loadtxt( "../k10audio.txt" , dtype=float)
 tr_x2 = np.loadtxt( "../k10tactile.txt" , dtype=float)
 tr_x3 = np.loadtxt( "../k10vision.txt" , dtype=float)
-#tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)
+tr_label = np.loadtxt( "../k10label.txt" , dtype=np.int32)
 te_x1 = np.loadtxt( "../k10audio.txt" , dtype=float)
 te_x2 = np.loadtxt( "../k10tactile.txt" , dtype=float)
 te_x3 = np.loadtxt( "../k10vision.txt" , dtype=float)
@@ -45,8 +45,8 @@ joint_input = len(tr_x1[0]) + len(tr_x2[0]) + len(tr_x3[0]),
 input_x1 = len(tr_x1[0]),
 input_x2 = len(tr_x2[0]),
 input_x3 = len(tr_x3[0]),
-hidden1_dimension = 70,
-hidden2_dimension = 50,
+hidden1_dimension = 30,
+hidden2_dimension = 30,
 )
 
 model.load_state_dict(torch.load('./deepmlda3m.pth'))
@@ -61,7 +61,7 @@ BoWと同じように訓練できるようにしただけ
 # ここまでがBoFを作成する作業#############################################
 print('Loading input data')
 #データセット定義
-ds_tr = TensorDataset(torch.from_numpy(tr_x1).float(),torch.from_numpy(tr_x2).float(),torch.from_numpy(tr_x3).float())
+ds_tr = TensorDataset(torch.from_numpy(tr_x1).float(),torch.from_numpy(tr_x2).float(),torch.from_numpy(tr_x3).float(),torch.from_numpy(tr_label).int())
 ds_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(te_x2).float(),torch.from_numpy(te_x3).float())
 #crossmodal_te = TensorDataset(torch.from_numpy(te_x1).float(), torch.from_numpy(te_label).int())
 
@@ -131,16 +131,17 @@ for x,t in enumerate(trainloader):
     #print(f"te_x1 ->{t[1]}")
     mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, jmvae_x3_recon, x3_recon, x3_mean, x3_logvar, z_hoge = model(t[0], t[1], t[2])
     tr_z = z_hoge.cpu()
-    #tr_label = t[3].cpu()
+    tr_label = t[3].cpu()
     #print(f"te_label->{te_label}")
     predict_tr_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
-    #print(f"tr_label->{predict_tr_label}")
-    #print(f"predict_train_label->{predict_train_label}")
+    print(f"tr_label->{tr_label}")
+    print(f"predict_train_label->{predict_tr_label}")
+    print("ARI",adjusted_rand_score(predict_tr_label,tr_label))
     #visualize_zs(tr_z.detach().numpy(), tr_label.detach().numpy(), "TRAIN")
     break
 
-for i in range(len(predict_tr_label)):
-    print("予測["+str(i)+"]->",predict_tr_label[i])
+#for i in range(len(predict_tr_label)):
+#    print("予測["+str(i)+"]->",predict_tr_label[i])
 
 """
 for x,t in enumerate(testloader):

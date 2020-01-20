@@ -105,9 +105,9 @@ class MAVITM(nn.Module):
         """Define Inference Network and Generator """
         """注意：上の関数で作成"""
         # Inference net q(z|x1,x2)
-        self.inference = joint_encoder(joint_input, 230, 230, encoder_noise)
-        self.mean = hidden(230, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
-        self.logvar = hidden(230, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.inference = joint_encoder(joint_input, 250, 200, encoder_noise)
+        self.mean = hidden(200, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.logvar = hidden(200, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
         # Inference net q(z|x1) & Generator p(x1|z)
         self.inference_x1 = encoder(input_x1, hidden1_dimension, hidden2_dimension, encoder_noise)
         self.x1_mean = hidden(hidden2_dimension, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
@@ -152,7 +152,7 @@ class MAVITM(nn.Module):
         )
 
         # 事前分布のパラメータを定義
-        self.prior_mean, self.prior_var = map(nn.Parameter, prior(topics, 0.995))
+        self.prior_mean, self.prior_var = map(nn.Parameter, prior(topics, 0.5))
         self.prior_logvar = nn.Parameter(self.prior_var.log())
         self.prior_mean.requires_grad = False
         self.prior_var.requires_grad = False

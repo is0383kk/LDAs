@@ -53,13 +53,13 @@ if __name__ == "__main__":
     print(train_mode)
     save_dir = "./learn_result"
     data = []
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x1.txt" , dtype=np.int32) )
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x2.txt" , dtype=np.int32) )
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x3.txt" , dtype=np.int32) )
-    data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x4.txt" , dtype=np.int32) )
-    label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
+    data.append(np.loadtxt( "../k"+str(K)+"tactile.txt" , dtype=np.int32) )
+    data.append(np.loadtxt( "../k"+str(K)+"audio.txt" , dtype=np.int32) )
+    data.append(np.loadtxt( "../k"+str(K)+"vidion.txt" , dtype=np.int32) )
+   
+    label = np.loadtxt( "../k"+str(K)+"mldalabel.txt" , dtype=np.int32)
     D = data[0].shape[0]
-    alpha0, betax1, betax2, betax3, betax4 = 0.5, 18.0, 17.0, 16.0, 15.0
+    alpha0, betax1, betax2, betax3, betax4 = 0.5, 10.0, 10.0, 10.0, 15.0
     alpha = alpha0 + np.random.rand(D, K)
     
     V = []

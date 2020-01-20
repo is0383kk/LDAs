@@ -29,13 +29,13 @@ import math
     '--batch-size',
     help='バッチサイズ(文書数/batch_size ).',
     type=int,
-    default=32
+    default=64
 )
 @click.option(
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=200
+    default=150
 )
 @click.option(
     '--top-words',
@@ -53,7 +53,7 @@ import math
     '--k',
     help='トピック数を指定',
     type=int,
-    default=10
+    default=30
 )
 
 def main(cuda,batch_size,epochs,top_words,testing_mode,k):#上のコマンドライン引数
