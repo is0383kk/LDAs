@@ -4,6 +4,7 @@ from sklearn.metrics.cluster import adjusted_rand_score
 import time
 import pickle
 import os
+import matplotlib.pyplot as plt
 
 def normalize(ndarray, axis):
     return ndarray / ndarray.sum(axis = axis, keepdims = True)
@@ -28,13 +29,13 @@ def make_data(N, hist):
         X.append(x_data)
     return X
 
-def save_model( save_dir, a, b1, b2, b3 ):
+def save_model( save_dir, a, b1, b2, b3 ,m, k):
     try:
         os.mkdir( save_dir )
     except:
         pass
 
-    with open( os.path.join( save_dir,"model.pickle" ), "wb" ) as f:
+    with open( os.path.join( save_dir,"modelM"+str(m)+"K"+str(k)+".pickle" ), "wb" ) as f:
         pickle.dump( [a, b1, b2, b3], f )
 
 
@@ -84,6 +85,7 @@ if __name__ == "__main__":
     T = 10000
     plt_epoch_list = np.arange(T)
     likelihood = np.zeros(T)
+    ari_list = []
     t1 = time.time() # 処理前の時刻
     if train_mode == False:
         q_test, d_a, d_b1, d_b2 = load_model( "./learn_result" )
@@ -147,7 +149,7 @@ if __name__ == "__main__":
         phi_est3 = np.array([np.random.dirichlet(b) for b in beta3])
         
         if train_mode:
-            save_model( "./learn_result", dig_alpha, dig_beta1, dig_beta2, dig_beta3)
+            save_model( "./learn_result", dig_alpha, dig_beta1, dig_beta2, dig_beta3, len(data), K)
         
         t3 = time.time()
         elapsed_time = t3-t1
@@ -155,6 +157,7 @@ if __name__ == "__main__":
         print("theta",theta_est.argmax(axis=1))
         print(f"経過時間：{elapsed_time}")
         ari = adjusted_rand_score(theta_est.argmax(axis=1),label)
+        ari_list.append(ari)
         print(f"ARI->{ari}")
         
         
@@ -168,13 +171,22 @@ if __name__ == "__main__":
             likelihood[t] += np.log(theta_est[d, :].dot(phi_est3[:, W_d])).sum()
 
     
-          
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(15,9))
-    plt.tick_params(labelsize=18)
-    plt.title('MLDA-vb(M=' + str(len(data))+'K='+str(K)+'):Log likelihood',fontsize=22)
-    plt.xlabel('Epoch',fontsize=22)
-    plt.ylabel('Log likelihood',fontsize=22)
-    plt.plot(plt_epoch_list,likelihood)
-
-    plt.savefig('vb_m'+str(len(data))+'k'+str(K)+'liks.pdf')
+        if (t+1)%250 == 0:
+            #print(plt_epoch_list[:t+1])
+            #print(ari_list)
+            plt.figure(figsize=(15,9))
+            plt.tick_params(labelsize=18)
+            plt.title('MLDA-vb(M=' + str(len(data))+'K='+str(K)+'T='+str(int(elapsed_time))+'):ARI='+str(ari),fontsize=22)
+            plt.xlabel('Epoch',fontsize=22)
+            plt.ylabel('ARI',fontsize=22)
+            plt.plot(plt_epoch_list[:t+1],ari_list)
+            plt.savefig('./ari/vb_m'+str(len(data))+'k'+str(K)+"e"+str(t)+'ari.pdf')
+        
+        if (t+1)%350 == 0:
+            plt.figure(figsize=(15,9))
+            plt.tick_params(labelsize=18)
+            plt.title('MLDA-vb(M=' + str(len(data))+'K='+str(K)+'):Log likelihood',fontsize=22)
+            plt.xlabel('Epoch',fontsize=22)
+            plt.ylabel('Log likelihood',fontsize=22)
+            plt.plot(plt_epoch_list[:t+1],likelihood[:t+1])
+            plt.savefig('./liks/vb_m'+str(len(data))+'k'+str(K)+"e"+str(t)+'liks.pdf')

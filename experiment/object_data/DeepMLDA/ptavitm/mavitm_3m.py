@@ -102,9 +102,9 @@ class MAVITM(nn.Module):
         """Define Inference Network and Generator """
         """注意：上の関数で作成"""
         # Inference net q(z|x1,x2)
-        self.inference = joint_encoder(joint_input,180, 180, encoder_noise)
-        self.mean = hidden(180, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
-        self.logvar = hidden(180, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.inference = joint_encoder(joint_input,230, 230, encoder_noise)
+        self.mean = hidden(230, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.logvar = hidden(230, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
         # Inference net q(z|x1) & Generator p(x1|z)
         self.inference_x1 = encoder(input_x1, 120, 120, encoder_noise)
         self.x1_mean = hidden(120, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
@@ -113,21 +113,21 @@ class MAVITM(nn.Module):
             input_x1, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
         # Inference net q(z|x2) & Generator p(x2|z)
-        self.inference_x2 = encoder(input_x2, 90, 90, encoder_noise)
-        self.x2_mean = hidden(90, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
-        self.x2_logvar = hidden(90, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.inference_x2 = encoder(input_x2, 120, 120, encoder_noise)
+        self.x2_mean = hidden(120, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.x2_logvar = hidden(120, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
         self.x2_generator = decoder(
             input_x2, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
         # Inference net q(z|x3) & Generator p(x3|z)
-        self.inference_x3 = encoder(input_x3, 130, 130, encoder_noise)
-        self.x3_mean = hidden(130, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
-        self.x3_logvar = hidden(130, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.inference_x3 = encoder(input_x3, 140, 140, encoder_noise)
+        self.x3_mean = hidden(140, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
+        self.x3_logvar = hidden(140, topics, eps=batchnorm_eps, momentum=batchnorm_momentum)
         self.x3_generator = decoder(
             input_x3, topics, decoder_noise=decoder_noise, eps=batchnorm_eps, momentum=batchnorm_momentum
         )
         # 事前分布のパラメータを定義
-        self.prior_mean, self.prior_var = map(nn.Parameter, prior(topics, 0.55))
+        self.prior_mean, self.prior_var = map(nn.Parameter, prior(topics, 0.5))
         self.prior_logvar = nn.Parameter(self.prior_var.log())
         self.prior_mean.requires_grad = False
         self.prior_var.requires_grad = False

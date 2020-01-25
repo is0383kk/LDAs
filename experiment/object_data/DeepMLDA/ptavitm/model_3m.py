@@ -69,6 +69,7 @@ def train(dataset: torch.utils.data.Dataset,
     loss_value = 0
     plt_epoch_list = np.arange(epochs)
     plt_loss_list = []
+    loss_min = 999999999
     for epoch in range(epochs):
         if scheduler is not None:
             scheduler.step()
@@ -151,6 +152,11 @@ def train(dataset: torch.utils.data.Dataset,
             )
         if update_freq is not None and epoch % update_freq == 0:
             average_loss = (sum(losses) / len(losses)) if len(losses) > 0 else -1
+            """
+            if average_loss < loss_min:
+                loss_min = average_loss
+                torch.save(autoencoder.state_dict(), 'deepmlda3m.pth')
+            """
             #print("sum(losses)->",sum(losses))
             #print("len(losses)->",len(losses))
             if validation_loader is not None:
@@ -175,7 +181,7 @@ def train(dataset: torch.utils.data.Dataset,
         print("実行時間",elapsed_time)
         #lossの可視化
         plt_loss_list.append(average_loss)
-
+    print("loss_min",loss_min)
     np.save('./runs/loss_list.npy', np.array(plt_loss_list))
     plt_loss_list = np.load('./runs/loss_list.npy')
     plt.figure(figsize=(13,9))
@@ -184,6 +190,5 @@ def train(dataset: torch.utils.data.Dataset,
     plt.xlabel('Epoch',fontsize=24)
     plt.ylabel('Log likelihood',fontsize=24)
     plt.plot(plt_epoch_list,plt_loss_list)
-
-    plt.savefig('liks.png')
     torch.save(autoencoder.state_dict(), 'deepmlda3m.pth')
+    plt.savefig('liks.png')

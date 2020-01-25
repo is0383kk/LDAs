@@ -83,7 +83,7 @@ if __name__ == "__main__":
     
     
     # 変分推論
-    T = 10000
+    T = 200
     plt_epoch_list = np.arange(T)
     likelihood = np.zeros(T)
     t1 = time.time() # 処理前の時刻
@@ -160,7 +160,7 @@ if __name__ == "__main__":
         print(f"ARI->{ari}")
         
         
-        """
+        
         # 対数尤度計算
         for (d, W_d) in enumerate(X[0]):
             likelihood[t] += np.log(theta_est[d, :].dot(phi_est1[:, W_d])).sum()
@@ -168,7 +168,7 @@ if __name__ == "__main__":
             likelihood[t] += np.log(theta_est[d, :].dot(phi_est2[:, W_d])).sum()
         for (d, W_d) in enumerate(X[2]):
             likelihood[t] += np.log(theta_est[d, :].dot(phi_est3[:, W_d])).sum()
-        """
+        
     
           
     import matplotlib.pyplot as plt
