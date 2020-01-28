@@ -6,6 +6,7 @@ from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+from sklearn.metrics.cluster import adjusted_rand_score
 
 
 def train(dataset: torch.utils.data.Dataset,
@@ -45,6 +46,10 @@ def train(dataset: torch.utils.data.Dataset,
     :param num_workers: optional number of workers for loader
     :return: None
     """
+    trainloader = DataLoader(
+        dataset,
+        batch_size=1000,
+    )
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -68,6 +73,7 @@ def train(dataset: torch.utils.data.Dataset,
     t1 = time.time()
     loss_value = 0
     plt_epoch_list = np.arange(epochs)
+    ari_list = []
     plt_loss_list = []
     for epoch in range(epochs):
         if scheduler is not None:
@@ -169,14 +175,39 @@ def train(dataset: torch.utils.data.Dataset,
         #lossの可視化
         plt_loss_list.append(average_loss)
 
+        for x,t in enumerate(trainloader):
+            mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, z_hoge = autoencoder(t[0], t[1])
+            tr_z = z_hoge.cpu()
+            tr_label = t[2].cpu()
+            #print(f"te_label->{te_label}")
+            predict_tr_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
+            #print(f"tr_label->{predict_tr_label}")
+            #print(f"predict_train_label->{predict_train_label}")
+            tr_ari = adjusted_rand_score(tr_label,predict_tr_label)
+            #print("label",tr_label)
+            #print("pred",predict_tr_label)
+            print(f"Joint:ARI->{tr_ari}")
+            break
+        ari_list.append(tr_ari)
+        if (epoch+1)%100 == 0:
+            #print(plt_epoch_list[:t+1])
+            #print(ari_list)
+            plt.figure(figsize=(15,9))
+            plt.tick_params(labelsize=18)
+            plt.title('Deep-MLDA(M=2K='+str(num_topics)+'T='+str(int(elapsed_time))+'):ARI='+str(tr_ari),fontsize=22)
+            plt.xlabel('Epoch',fontsize=22)
+            plt.ylabel('ARI',fontsize=22)
+            plt.plot(plt_epoch_list[:epoch+1],ari_list)
+            plt.savefig('./m2k'+str(num_topics)+"e"+str(epoch)+'ari.pdf')
+
     np.save('./runs/loss_list.npy', np.array(plt_loss_list))
     plt_loss_list = np.load('./runs/loss_list.npy')
     plt.figure(figsize=(13,9))
     plt.tick_params(labelsize=18)
-    plt.title('Amortized MLDA(Topic='+ str(num_topics) +'):Log likelihood',fontsize=24)
+    plt.title('Deep-MLDA(M2K='+ str(num_topics) +'):Log likelihood',fontsize=24)
     plt.xlabel('Epoch',fontsize=24)
     plt.ylabel('Log likelihood',fontsize=24)
     plt.plot(plt_epoch_list,plt_loss_list)
 
-    plt.savefig('m2'+str(num_topics)+'liks.png')
+    plt.savefig('m2k'+str(num_topics)+'liks.pdf')
     torch.save(autoencoder.state_dict(), 'deepmlda2m.pth')

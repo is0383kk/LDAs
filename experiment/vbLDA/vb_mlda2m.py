@@ -59,7 +59,7 @@ if __name__ == "__main__":
     data.append(np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_x2.txt" , dtype=np.int32) )
     label = np.loadtxt( "../make_synthetic_data/k"+str(K)+"tr_z.txt" , dtype=np.int32)
     D = data[0].shape[0]
-    alpha0, betax1, betax2 = 0.5, 1.0, 1.0
+    alpha0, betax1, betax2 = 0.5, 2.5, 2.5
     alpha = alpha0 + np.random.rand(D, K)
     
     V = []

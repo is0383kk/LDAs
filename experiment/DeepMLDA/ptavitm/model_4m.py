@@ -6,6 +6,7 @@ from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+from sklearn.metrics.cluster import adjusted_rand_score
 
 
 def train(dataset: torch.utils.data.Dataset,
@@ -45,6 +46,10 @@ def train(dataset: torch.utils.data.Dataset,
     :param num_workers: optional number of workers for loader
     :return: None
     """
+    trainloader = DataLoader(
+        dataset,
+        batch_size=1000,
+    )
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,
@@ -67,6 +72,7 @@ def train(dataset: torch.utils.data.Dataset,
     autoencoder.train()
     t1 = time.time()
     loss_value = 0
+    ari_list = []
     plt_epoch_list = np.arange(epochs)
     plt_loss_list = []
     for epoch in range(epochs):
@@ -185,6 +191,27 @@ def train(dataset: torch.utils.data.Dataset,
         print("実行時間",elapsed_time)
         #lossの可視化
         plt_loss_list.append(average_loss)
+
+        for x,t in enumerate(trainloader):
+            mean, logvar, jmvae_x1_recon, x1_recon, x1_mean, x1_logvar, jmvae_x2_recon, x2_recon, x2_mean, x2_logvar, jmvae_x3_recon, x3_recon, x3_mean, x3_logvar, jmvae_x4_recon, x4_recon, x4_mean, x4_logvar, z_hoge = autoencoder(t[0], t[1], t[2], t[3])
+            tr_z = z_hoge.cpu()
+            tr_label = t[4].cpu()
+            #print(f"te_label->{te_label}")
+            predict_tr_label = F.softmax(z_hoge,dim=1).argmax(1).numpy()
+            tr_ari = adjusted_rand_score(tr_label,predict_tr_label)
+            print(f"Joint:ARI->{tr_ari}")
+            break
+        ari_list.append(tr_ari)
+        if (epoch+1)%100 == 0:
+            #print(plt_epoch_list[:t+1])
+            #print(ari_list)
+            plt.figure(figsize=(15,9))
+            plt.tick_params(labelsize=18)
+            plt.title('Deep-MLDA(M=4K='+str(num_topics)+'T='+str(int(elapsed_time))+'):ARI='+str(tr_ari),fontsize=22)
+            plt.xlabel('Epoch',fontsize=22)
+            plt.ylabel('ARI',fontsize=22)
+            plt.plot(plt_epoch_list[:epoch+1],ari_list)
+            plt.savefig('./m4k'+str(num_topics)+"e"+str(epoch)+'ari.pdf')
 
     np.save('./runs/loss_list.npy', np.array(plt_loss_list))
     plt_loss_list = np.load('./runs/loss_list.npy')

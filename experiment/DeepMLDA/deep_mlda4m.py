@@ -29,13 +29,13 @@ import math
     '--batch-size',
     help='バッチサイズ(文書数/batch_size ).',
     type=int,
-    default=64
+    default=32
 )
 @click.option(
     '--epochs',
     help='学習エポック (default 5).',
     type=int,
-    default=150
+    default=1000
 )
 @click.option(
     '--top-words',
@@ -62,7 +62,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode,k):#上のコマンドラ
     tr_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_x2.txt" , dtype=float)
     tr_x3 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_x3.txt" , dtype=float)
     tr_x4 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_x4.txt" , dtype=float)
-    #tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)
+    tr_label = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"tr_z.txt" , dtype=np.int32)
     te_x1 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_x1.txt" , dtype=float)
     te_x2 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_x2.txt" , dtype=float)
     te_x3 = np.loadtxt( "../make_synthetic_data/k"+str(define_topic)+"te_x3.txt" , dtype=float)
@@ -112,7 +112,7 @@ def main(cuda,batch_size,epochs,top_words,testing_mode,k):#上のコマンドラ
     x3_indexed_vocab = [x3_reverse_vocab[index] for index in range(len(x3_reverse_vocab))]
     x4_reverse_vocab = {x4_vocab[word]: word for word in x4_vocab}
     x4_indexed_vocab = [x4_reverse_vocab[index] for index in range(len(x4_reverse_vocab))]
-    ds_tr = TensorDataset(torch.from_numpy(tr_x1).float(),torch.from_numpy(tr_x2).float(),torch.from_numpy(tr_x3).float(),torch.from_numpy(tr_x4).float())
+    ds_tr = TensorDataset(torch.from_numpy(tr_x1).float(),torch.from_numpy(tr_x2).float(),torch.from_numpy(tr_x3).float(),torch.from_numpy(tr_x4).float(),torch.from_numpy(tr_label).int())
     ds_te = TensorDataset(torch.from_numpy(te_x1).float(),torch.from_numpy(te_x2).float(),torch.from_numpy(te_x3).float(),torch.from_numpy(te_x4).float())
 
     writer = SummaryWriter()

@@ -1,7 +1,6 @@
 import numpy as np
 import random
 import math
-import pylab
 import pickle
 import os
 import matplotlib.pyplot as plt
@@ -10,32 +9,14 @@ import argparse
 from sklearn.metrics.cluster import adjusted_rand_score
 
 parser = argparse.ArgumentParser(description='MLDA')
-parser.add_argument('--k', type=int, default=10, metavar='K',
+parser.add_argument('--k', type=int, default=30, metavar='K',
                     help="トピック数を指定")
 args = parser.parse_args()
 
 # ハイパーパラメータ
-__alpha = 0.1
-__beta = 0.1
+__alpha = 0.5
+__beta = 3.0
 epoch_num = 100 # 学習エポック
-
-def plot( n_dz, liks, D, K ):
-    print ("対数尤度", liks[-1])
-    doc_dopics = np.argmax( n_dz , 1 )
-    print ("分類結果", doc_dopics)
-    print ("---------------------")
-
-
-    # グラフ表示
-    pylab.clf()
-    pylab.subplot("121")
-    pylab.title( "P(z|d)" )
-    pylab.imshow( n_dz / np.tile(np.sum(n_dz,1).reshape(D,1),(1,K)) , interpolation="none" )
-    pylab.subplot("122")
-    pylab.title( "liklihood" )
-    pylab.plot( range(len(liks)) , liks )
-    pylab.draw()
-    pylab.pause(0.1)
 
 def calc_lda_param( docs_mdn, topics_mdn, K, dims ):
     M = len(docs_mdn)
@@ -104,7 +85,7 @@ def calc_liklihood( data, n_dz, n_zw, n_z, K, V  ):
 
     return lik
 
-def save_model( save_dir, n_dz, n_mzw, n_mz, M, dims ):
+def save_model( save_dir, n_dz, n_mzw, n_mz, M, dims, m, k ):
     try:
         os.mkdir( save_dir )
     except:
@@ -119,12 +100,12 @@ def save_model( save_dir, n_dz, n_mzw, n_mz, M, dims ):
         Pdw = Pdz.dot(Pwz.T)
         np.savetxt( os.path.join( save_dir, "Pmdw[%d].txt" % m ) , Pdw )
 
-    with open( os.path.join( save_dir, "model.pickle" ), "wb" ) as f:
+    with open( os.path.join( save_dir, "modelM"+str(m)+"K"+str(k)+".pickle" ), "wb" ) as f:
         pickle.dump( [n_mzw, n_mz], f )
 
 
-def load_model( load_dir ):
-    model_path = os.path.join( load_dir, "model.pickle" )
+def load_model( load_dir , m, k):
+    model_path = os.path.join( load_dir, "modelM"+str(m)+"K"+str(k)+".pickle" )
     with open(model_path, "rb" ) as f:
         a,b = pickle.load( f )
 
@@ -132,8 +113,7 @@ def load_model( load_dir ):
 
 # MLDAのメイン処理
 def mlda( data, label , K, num_itr=epoch_num, save_dir="model", load_dir=None ):
-    pylab.ion()
-    plt_epoch_list = np.arange(num_itr)
+    plt_epoch_list = np.arange(int(num_itr))
     # 尤度のリスト
     liks = []
 
@@ -164,6 +144,7 @@ def mlda( data, label , K, num_itr=epoch_num, save_dir="model", load_dir=None ):
     if load_dir:
         n_mzw, n_mz = load_model( load_dir )
     t1 = time.time() # 処理前の時刻
+    ari_list = []
     for it in range(num_itr):
         print(str(it + 1) + "回目")
         # メイン処理
@@ -212,6 +193,7 @@ def mlda( data, label , K, num_itr=epoch_num, save_dir="model", load_dir=None ):
         #print(f"doc_dopics -> {doc_dopics}")
         #print(f"label -> {label[0]}")
         ari = adjusted_rand_score(doc_dopics,label[0])
+        ari_list.append(ari)
         print("ari->",ari)    
         file_name = "./time.txt"
         try:
@@ -221,29 +203,34 @@ def mlda( data, label , K, num_itr=epoch_num, save_dir="model", load_dir=None ):
             print(e)
         finally:
             file.close()
-        print(f"経過時間：{elapsed_time}")
+        print(f"k{K}m{len(data)}経過時間：{elapsed_time}")
     
-    save_model( save_dir, n_dz, n_mzw, n_mz, M, dims )
-    np_liks = np.array(liks)
-    doc_dopics = np.argmax( n_dz , 1 )
-    #doc_dopics = doc_dopics[::-1]
-    print(f"doc_dopics -> {doc_dopics}")
-    print(f"label -> {label[0]}")
-    ari = adjusted_rand_score(doc_dopics,label[0])
-    print("ari->",ari)
+        save_model( save_dir, n_dz, n_mzw, n_mz, M, dims, M,K )
+    
+        np_liks = np.array(liks)
+        if (it+1)%50 == 0:
+            #print(plt_epoch_list[:t+1])
+            #print(ari_list)
+            plt.figure(figsize=(15,9))
+            plt.tick_params(labelsize=18)
+            plt.title('MLDA-cgb(M=' + str(len(data))+'K='+str(K)+'T='+str(int(elapsed_time))+'):ARI='+str(ari),fontsize=22)
+            plt.xlabel('Epoch',fontsize=22)
+            plt.ylabel('ARI',fontsize=22)
+            plt.plot(plt_epoch_list[:it+1],ari_list)
+            plt.savefig('./ari/gb_m'+str(len(data))+'k'+str(K)+"e"+str(it)+'ari.pdf')
+        
+        if (it+1)%100 == 0:
+            plt.figure(figsize=(17,9))
+            plt.tick_params(labelsize=18)
+            plt.title('MLDA-cgb(M=' + str(len(data))+'K='+str(K)+'):Log likelihood',fontsize=22)
+            plt.xlabel('Epoch',fontsize=24)
+            plt.ylabel('Log likelihood',fontsize=24)
+            plt.plot(plt_epoch_list[:it+1],np_liks)
+            #plt.show()
+            plt.savefig('./liks/cgb_m'+str(len(data))+'k'+str(K)+"e"+str(it)+'liks.pdf')
+        
     
     
-    plt.figure(figsize=(17,9))
-    plt.tick_params(labelsize=18)
-    plt.title('MLDA(Topic='+ str(K) +'):Log likelihood',fontsize=24)
-    plt.xlabel('Epoch',fontsize=24)
-    plt.ylabel('Log likelihood',fontsize=24)
-    plt.plot(plt_epoch_list,np_liks)
-    #plt.show()
-    plt.savefig("k"+str(K)+"liks.png")
-    
-    #pylab.ioff()
-    #pylab.show()
     
 def main():
     topic = args.k
@@ -257,7 +244,7 @@ def main():
     #data.append( np.loadtxt( "../make_synthetic_data/k"+str(topic)+"te_x6.txt" , dtype=np.int32) )
     label.append(np.loadtxt( "../make_synthetic_data/k"+str(topic)+"tr_z.txt" , dtype=np.int32))
     #for i in range(30):
-    mlda( data, label , topic, 10000, "learn_result" )
+    mlda( data, label , topic, 5000, "learn_result" )
 
     #data[1] = None
     #mlda( data, label , topic, 20, "recog_result" , "learn_result" )
