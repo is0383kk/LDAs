@@ -3,8 +3,7 @@ This repository is an implementation of LDA.
 Implementation contents are as follows　　
 1. **Latent Dirichlet Allocation as a probabilistic generative model.**
 2. **Multimodal Dirichlet Allocation as a probabilistic generative model.**
-3. **Deep-LDA (LDA based on VAE) as a deep generative model.**
-4. **Deep-MLDA (LDA based on JMVAE) as a deep generative model.**
+
 
 # Latent Dirichlet Allocation
 [Original paper](http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf)  
